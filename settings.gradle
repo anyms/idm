@@ -1,1 +1,2 @@
 include ':app', ':idm'
+rootProject.name='IDMExample'
