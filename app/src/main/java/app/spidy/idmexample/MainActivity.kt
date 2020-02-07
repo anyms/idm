@@ -1,12 +1,9 @@
 package app.spidy.idmexample
 
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -15,15 +12,49 @@ import app.spidy.hiper.controllers.Hiper
 import app.spidy.idm.controllers.Idm
 import app.spidy.idm.data.Snapshot
 import app.spidy.idm.interfaces.IdmListener
+import app.spidy.kotlinutils.DEBUG_MODE
+import app.spidy.kotlinutils.debug
 import java.lang.Exception
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
+
+    init {
+        DEBUG_MODE = true
+    }
+
     private val links = arrayListOf(
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment1_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment2_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment3_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment4_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment5_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment6_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment7_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment8_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment9_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment10_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment11_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment12_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment13_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment14_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment15_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment16_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment17_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment18_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment19_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment20_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment21_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment22_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment23_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment24_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment25_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment26_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93","https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/segment27_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=/i/songs/41/2742841/28077463/28077463_64.mp4/*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93"
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment1_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment2_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment3_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment4_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment5_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment6_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment7_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment8_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment9_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment10_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment11_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment12_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment13_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment14_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment15_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment16_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment17_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment18_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment19_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment20_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment21_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment22_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment23_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment24_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment25_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment26_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment27_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment28_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
+        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment29_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b"
     )
 
 
@@ -69,14 +100,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun debug(s: Any?) {
-        Log.d("hello", s.toString())
-    }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        PermissionHandler.requestStorage(this, "need storage permission") {}
 
         downloadBtn = findViewById(R.id.download_button)
         urlField = findViewById(R.id.url_field)
@@ -89,10 +118,11 @@ class MainActivity : AppCompatActivity() {
 
         val snapshot = Snapshot(
             uId = UUID.randomUUID().toString(),
-            url = "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28077463/28077463_64.mp4/index_0_a.m3u8?set-akamai-hls-revision=5&hdntl=exp=1580828940~acl=%2fi%2fsongs%2f41%2f2742841%2f28077463%2f28077463_64.mp4%2f*~data=hdntl~hmac=fc9fbc3a69b1a41d863b512ea4d546c616868f3c945d34998ded9780429bca93",
+            url = "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/index_0_a.m3u8?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=%2fi%2fsongs%2f41%2f2742841%2f28236538%2f28236538_64.mp4%2f*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
             fileName = "songs.mp3",
             isStream = true,
-            streamUrls = links
+            streamUrls = links,
+            destUri = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
         )
 
 
@@ -106,6 +136,8 @@ class MainActivity : AppCompatActivity() {
                     break
                 }
             }
+
+            debug(snapshot.totalSize.toString())
         }
 
         downloadBtn.setOnClickListener {
@@ -126,5 +158,17 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         idm.unbind()
+    }
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (requestCode == PermissionHandler.STORAGE_PERMISSION_CODE ||
+            requestCode == PermissionHandler.LOCATION_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                PermissionHandler.execute()
+            }
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 }

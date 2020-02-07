@@ -16,6 +16,7 @@ import app.spidy.idm.controllers.formatBytes
 import app.spidy.idm.controllers.secsToTime
 import app.spidy.idm.data.Snapshot
 import app.spidy.idm.interfaces.IdmListener
+import app.spidy.kotlinutils.debug
 import app.spidy.kotlinutils.onUiThread
 import java.io.File
 import java.io.RandomAccessFile
@@ -80,7 +81,7 @@ class IdmService: Service() {
             if (!isDone) {
                 calcSpeed()
             } else {
-                Log.d("hello", "kill it")
+                debug("kill it")
                 isCalcSpeedRunning = false
                 notificationManager.cancel(STICKY_NOTIFICATION_ID)
             }
@@ -91,7 +92,7 @@ class IdmService: Service() {
         if (queue.isEmpty()) {
             isDone = true
             idmListener?.onDone()
-            Log.d("hello", "Done.")
+            debug("Done.")
         } else {
             prepare(queue.removeAt(0)) {
                 snapshot = it
@@ -107,35 +108,41 @@ class IdmService: Service() {
     }
 
     private fun prepare(snp: Snapshot, callback: (Snapshot) -> Unit) {
-        if (snp.totalSize == 0L) {
-            hiper.head(snp.url)
-                .ifException {
-                    Log.d("hello", "Error: ${it?.message}")
-                }
-                .ifFailed {
-                    Log.d("hello", "Request failed on headers")
-                }
-                .finally { headerResponse ->
-                    snp.headers = headerResponse.headers.toHashMap()
-                    snp.totalSize = headerResponse.headers.get("content-length")!!.toLong()
-                    val tmpHeaders: HashMap<String, Any?> = hashMapOf()
-                    tmpHeaders["range"] = "bytes=0-0"
-                    hiper.get(snp.url, headers = tmpHeaders)
-                        .ifException {
-                            Log.d("hello", "Error: ${it?.message}")
-                        }
-                        .ifFailed {
-                            Log.d("hello", "Request failed on resume check")
-                            snp.isResumable = false
-                            onUiThread { callback(snp) }
-                        }
-                        .finally { resumeResponse ->
-                            snp.isResumable = resumeResponse.statusCode == 206
-                            onUiThread { callback(snp) }
-                        }
-                }
-        } else {
-            callback(snp)
+        when {
+            snp.isStream -> {
+                snp.isResumable = false
+                onUiThread { callback(snp) }
+            }
+            snp.totalSize == 0L -> {
+                hiper.head(snp.url)
+                    .ifException {
+                        debug("Error: ${it?.message}")
+                    }
+                    .ifFailed {
+                        debug("Request failed on headers")
+                    }
+                    .finally { headerResponse ->
+                        snp.totalSize = headerResponse.headers.get("content-length")!!.toLong()
+                        val tmpHeaders: HashMap<String, Any?> = hashMapOf()
+                        tmpHeaders["range"] = "bytes=0-0"
+                        hiper.get(snp.url, headers = tmpHeaders)
+                            .ifException {
+                                debug("Error: ${it?.message}")
+                            }
+                            .ifFailed {
+                                debug("Request failed on resume check")
+                                snp.isResumable = false
+                                onUiThread { callback(snp) }
+                            }
+                            .finally { resumeResponse ->
+                                snp.isResumable = resumeResponse.statusCode == 206
+                                onUiThread { callback(snp) }
+                            }
+                    }
+            }
+            else -> {
+                onUiThread { callback(snp) }
+            }
         }
     }
 
@@ -143,35 +150,74 @@ class IdmService: Service() {
 
     }
 
+    private fun downloadStream(file: RandomAccessFile, count: Int) {
+        if (snapshot.streamUrls.size >= count) {
+            debug("URL: ${snapshot.streamUrls[count]}")
+            caller =
+                hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
+                    .ifFailed {
+                        idmListener?.onFail(snapshot)
+                        onUiThread { download() }
+                    }
+                    .ifException { e ->
+                        idmListener?.onInterrupt(snapshot)
+                        onUiThread { download() }
+                    }
+                    .ifStream { buffer, byteSize ->
+                        progress =
+                            (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
+                        if (byteSize == -1) {
+                            debug("Recursive called")
+                            downloadStream(file, count+1)
+                        } else {
+                            file.write(buffer!!, 0, byteSize)
+                            snapshot.downloadedSize += byteSize
+                        }
+                    }
+                    .finally { }
+        } else {
+            file.close()
+            download()
+        }
+    }
+
     private fun downloadLegacy() {
-        val file = RandomAccessFile("${snapshot.destUri}${File.separator}${snapshot.fileName}", "rw")
-        file.seek(snapshot.downloadedSize)
         val headers = HashMap<String, Any?>()
 
         if (snapshot.isResumable) {
             headers["range"] = "bytes=${snapshot.downloadedSize}-${snapshot.totalSize}"
+        } else {
+            snapshot.downloadedSize = 0
         }
 
-        caller = hiper.get(snapshot.url, headers = headers, isStream = true)
-            .ifException {
-                idmListener?.onInterrupt(snapshot)
-                download()
-            }
-            .ifFailed {
-                idmListener?.onFail(snapshot)
-                download()
-            }
-            .ifStream { buffer, byteSize ->
-                progress = (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
-                if (byteSize == -1) {
-                    file.close()
-                    download()
-                } else {
-                    file.write(buffer!!, 0, byteSize)
-                    snapshot.downloadedSize += byteSize
+        val file = RandomAccessFile("${snapshot.destUri}${File.separator}${snapshot.fileName}", "rw")
+        file.seek(snapshot.downloadedSize)
+
+        if (snapshot.isStream) {
+            downloadStream(file, 0)
+        } else {
+            caller = hiper.get(snapshot.url, headers = headers, isStream = true)
+                .ifException {
+                    idmListener?.onInterrupt(snapshot)
+                    onUiThread { download() }
                 }
-            }
-            .finally {}
+                .ifFailed {
+                    idmListener?.onFail(snapshot)
+                    onUiThread { download() }
+                }
+                .ifStream { buffer, byteSize ->
+                    progress =
+                        (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
+                    if (byteSize == -1) {
+                        file.close()
+                        onUiThread { download() }
+                    } else {
+                        file.write(buffer!!, 0, byteSize)
+                        snapshot.downloadedSize += byteSize
+                    }
+                }
+                .finally {}
+        }
     }
 
 

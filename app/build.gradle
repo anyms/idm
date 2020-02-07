@@ -34,5 +34,6 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
     implementation project(":idm")
-    implementation 'com.github.anyms:hiper:build-0.0.3'
+    implementation 'com.github.anyms:hiper:build-0.0.4'
+    implementation 'com.github.anyms:android-kotlin-utils:build-0.0.6'
 }
