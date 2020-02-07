@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         val snapshot = Snapshot(
             uId = UUID.randomUUID().toString(),
             url = "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/index_0_a.m3u8?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=%2fi%2fsongs%2f41%2f2742841%2f28236538%2f28236538_64.mp4%2f*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-            fileName = "songs.mp3",
+            fileName = "songs.mpg",
             isStream = true,
             streamUrls = links,
             destUri = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
@@ -139,6 +139,13 @@ class MainActivity : AppCompatActivity() {
 
             debug(snapshot.totalSize.toString())
         }
+
+//        val snapshot = Snapshot(
+//            uId = UUID.randomUUID().toString(),
+//            url = "https://www.cinemaworldtheaters.com/trailers/bombshell.mp4",
+//            fileName = "bombshell.mp4",
+//            destUri = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
+//        )
 
         downloadBtn.setOnClickListener {
             idm.run(idmListener)

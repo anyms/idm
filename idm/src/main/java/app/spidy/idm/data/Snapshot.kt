@@ -7,6 +7,7 @@ data class Snapshot(
     var isResumable: Boolean = false,
     var downloadedSize: Long = 0,
     var totalSize: Long = 0,
+    var mimeType: String = "text/plain",
     var destUri: String? = null,
     var isStream: Boolean = false,
     val streamUrls: ArrayList<String> = arrayListOf()

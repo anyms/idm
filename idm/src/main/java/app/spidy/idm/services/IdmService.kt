@@ -2,9 +2,10 @@ package app.spidy.idm.services
 
 
 import android.app.Service
+import android.content.ContentValues
 import android.content.Intent
 import android.os.*
-import android.util.Log
+import android.provider.MediaStore
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -19,6 +20,7 @@ import app.spidy.idm.interfaces.IdmListener
 import app.spidy.kotlinutils.debug
 import app.spidy.kotlinutils.onUiThread
 import java.io.File
+import java.io.OutputStream
 import java.io.RandomAccessFile
 
 class IdmService: Service() {
@@ -123,6 +125,7 @@ class IdmService: Service() {
                     }
                     .finally { headerResponse ->
                         snp.totalSize = headerResponse.headers.get("content-length")!!.toLong()
+                        snp.mimeType = headerResponse.headers.get("content-type")!!.toString()
                         val tmpHeaders: HashMap<String, Any?> = hashMapOf()
                         tmpHeaders["range"] = "bytes=0-0"
                         hiper.get(snp.url, headers = tmpHeaders)
@@ -147,11 +150,59 @@ class IdmService: Service() {
     }
 
     private fun downloadQ() {
+        val headers = HashMap<String, Any?>()
+        snapshot.downloadedSize = 0
+        snapshot.isResumable = false
 
+        if (snapshot.isStream) {
+            snapshot.mimeType = "video/MP2T"
+        }
+
+        val fileName = snapshot.fileName.split(".").dropLast(1).joinToString(".")
+
+        val resolver = contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, snapshot.mimeType)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/Fetcher")
+        }
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+        val outputStream: OutputStream? = if (uri == null) null else resolver.openOutputStream(uri)
+
+        if (snapshot.isStream) {
+            downloadQStream(outputStream, 0)
+        } else {
+            caller = hiper.get(snapshot.url, headers = headers, isStream = true)
+                .ifException {
+                    outputStream?.flush()
+                    outputStream?.close()
+                    idmListener?.onInterrupt(snapshot)
+                    onUiThread { download() }
+                }
+                .ifFailed {
+                    outputStream?.flush()
+                    outputStream?.close()
+                    idmListener?.onFail(snapshot)
+                    onUiThread { download() }
+                }
+                .ifStream { buffer, byteSize ->
+                    progress =
+                        (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
+                    if (byteSize == -1) {
+                        outputStream?.flush()
+                        outputStream?.close()
+                        onUiThread { download() }
+                    } else {
+                        outputStream?.write(buffer!!, 0, byteSize)
+                        snapshot.downloadedSize += byteSize
+                    }
+                }
+                .finally {}
+        }
     }
 
-    private fun downloadStream(file: RandomAccessFile, count: Int) {
-        if (snapshot.streamUrls.size >= count) {
+    private fun downloadQStream(outputStream: OutputStream?, count: Int) {
+        if (snapshot.streamUrls.size > count) {
             debug("URL: ${snapshot.streamUrls[count]}")
             caller =
                 hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
@@ -168,7 +219,39 @@ class IdmService: Service() {
                             (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                         if (byteSize == -1) {
                             debug("Recursive called")
-                            downloadStream(file, count+1)
+                            onUiThread { downloadQStream(outputStream, count+1) }
+                        } else {
+                            outputStream?.write(buffer!!, 0, byteSize)
+                            snapshot.downloadedSize += byteSize
+                        }
+                    }
+                    .finally { }
+        } else {
+            outputStream?.flush()
+            outputStream?.close()
+            download()
+        }
+    }
+
+    private fun downloadLegacyStream(file: RandomAccessFile, count: Int) {
+        if (snapshot.streamUrls.size > count) {
+            debug("URL: ${snapshot.streamUrls[count]}")
+            caller =
+                hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
+                    .ifFailed {
+                        idmListener?.onFail(snapshot)
+                        onUiThread { download() }
+                    }
+                    .ifException { e ->
+                        idmListener?.onInterrupt(snapshot)
+                        onUiThread { download() }
+                    }
+                    .ifStream { buffer, byteSize ->
+                        progress =
+                            (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
+                        if (byteSize == -1) {
+                            debug("Recursive called")
+                            onUiThread { downloadLegacyStream(file, count+1) }
                         } else {
                             file.write(buffer!!, 0, byteSize)
                             snapshot.downloadedSize += byteSize
@@ -194,14 +277,16 @@ class IdmService: Service() {
         file.seek(snapshot.downloadedSize)
 
         if (snapshot.isStream) {
-            downloadStream(file, 0)
+            downloadLegacyStream(file, 0)
         } else {
             caller = hiper.get(snapshot.url, headers = headers, isStream = true)
                 .ifException {
+                    file.close()
                     idmListener?.onInterrupt(snapshot)
                     onUiThread { download() }
                 }
                 .ifFailed {
+                    file.close()
                     idmListener?.onFail(snapshot)
                     onUiThread { download() }
                 }
