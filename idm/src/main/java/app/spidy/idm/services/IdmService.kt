@@ -202,11 +202,11 @@ class IdmService: Service() {
             downloadQStream(outputStream, 0)
         } else {
             caller = hiper.get(snapshot.url, headers = headers, isStream = true)
-                .ifException {
+                .ifException { e ->
                     outputStream?.flush()
                     outputStream?.close()
                     onUiThread {
-                        idmListener?.onInterrupt(snapshot)
+                        idmListener?.onInterrupt(snapshot, e)
                         download()
                     }
                 }
@@ -250,7 +250,7 @@ class IdmService: Service() {
                     }
                     .ifException { e ->
                         onUiThread {
-                            idmListener?.onInterrupt(snapshot)
+                            idmListener?.onInterrupt(snapshot, e)
                             download()
                         }
                     }
@@ -289,7 +289,7 @@ class IdmService: Service() {
                     }
                     .ifException { e ->
                         onUiThread {
-                            idmListener?.onInterrupt(snapshot)
+                            idmListener?.onInterrupt(snapshot, e)
                             download()
                         }
                     }
@@ -328,10 +328,10 @@ class IdmService: Service() {
             downloadLegacyStream(file, 0)
         } else {
             caller = hiper.get(snapshot.url, headers = headers, isStream = true)
-                .ifException {
+                .ifException { e ->
                     file.close()
                     onUiThread {
-                        idmListener?.onInterrupt(snapshot)
+                        idmListener?.onInterrupt(snapshot, e)
                         download()
                     }
                 }

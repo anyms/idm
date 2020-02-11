@@ -7,6 +7,6 @@ interface IdmListener {
     fun onFinish(snapshot: Snapshot)
     fun onStart(snapshot: Snapshot)
     fun onProgress(snapshot: Snapshot, progress: Int)
-    fun onInterrupt(snapshot: Snapshot)
+    fun onInterrupt(snapshot: Snapshot, e: Exception?)
     fun onFail(snapshot: Snapshot)
 }
