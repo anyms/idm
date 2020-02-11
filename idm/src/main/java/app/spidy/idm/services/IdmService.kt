@@ -78,6 +78,8 @@ class IdmService: Service() {
                 if (downloadPerSec != 0L) {
                     downloadSpeed = "${formatBytes(downloadPerSec, true)}/s"
                     remainingTime = secsToTime((snapshot.totalSize - snapshot.downloadedSize) / downloadPerSec)
+                    snapshot.downloadSpeed = downloadSpeed
+                    snapshot.remainingTime = remainingTime
                 }
             }
             prevDownloaded = snapshot.downloadedSize
