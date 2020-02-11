@@ -6,6 +6,7 @@ import android.content.ContentValues
 import android.content.Intent
 import android.os.*
 import android.provider.MediaStore
+import android.webkit.URLUtil
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -14,6 +15,7 @@ import app.spidy.hiper.controllers.Hiper
 import app.spidy.idm.App
 import app.spidy.idm.R
 import app.spidy.idm.controllers.formatBytes
+import app.spidy.idm.controllers.guessFileName
 import app.spidy.idm.controllers.secsToTime
 import app.spidy.idm.data.Snapshot
 import app.spidy.idm.interfaces.IdmListener
@@ -113,6 +115,19 @@ class IdmService: Service() {
         when {
             snp.isStream -> {
                 snp.isResumable = false
+                // TODO: change the extension
+                if (snp.fileName == null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        snp.fileName = URLUtil.guessFileName(snp.url, null, null)
+                    } else {
+                        snp.fileName = guessFileName(
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath,
+                            snp.url,
+                            null,
+                            null
+                        )
+                    }
+                }
                 onUiThread { callback(snp) }
             }
             snp.totalSize == 0L -> {
@@ -128,6 +143,18 @@ class IdmService: Service() {
                         snp.mimeType = headerResponse.headers.get("content-type")!!.toString()
                         val tmpHeaders: HashMap<String, Any?> = hashMapOf()
                         tmpHeaders["range"] = "bytes=0-0"
+                        if (snp.fileName == null) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                snp.fileName = URLUtil.guessFileName(snp.url, headerResponse.headers.get("content-disposition"), snp.mimeType)
+                            } else {
+                                snp.fileName = guessFileName(
+                                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath,
+                                    snp.url,
+                                    snp.mimeType,
+                                    headerResponse.headers.get("content-disposition")
+                                )
+                            }
+                        }
                         hiper.get(snp.url, headers = tmpHeaders)
                             .ifException {
                                 debug("Error: ${it?.message}")
@@ -158,7 +185,7 @@ class IdmService: Service() {
             snapshot.mimeType = "video/MP2T"
         }
 
-        val fileName = snapshot.fileName.split(".").dropLast(1).joinToString(".")
+        val fileName = snapshot.fileName?.split(".")?.dropLast(1)?.joinToString(".")
 
         val resolver = contentResolver
         val contentValues = ContentValues().apply {
@@ -311,7 +338,7 @@ class IdmService: Service() {
     }
 
 
-    private fun updateInfo(title: String, downloadedSize: Long, totalSize: Long) {
+    private fun updateInfo(title: String?, downloadedSize: Long, totalSize: Long) {
         notification.setContentTitle(title)
         notification.setContentText("${formatBytes(downloadedSize)}/${formatBytes(totalSize)}")
         notification.setContentInfo(downloadSpeed)

@@ -3,7 +3,7 @@ package app.spidy.idm.data
 data class Snapshot(
     val uId: String,
     val url: String,
-    val fileName: String,
+    var fileName: String? = null,
     var isResumable: Boolean = false,
     var downloadedSize: Long = 0,
     var totalSize: Long = 0,
