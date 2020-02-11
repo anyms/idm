@@ -33,8 +33,8 @@ class Idm(private val context: Context) {
         override fun onFail(snapshot: Snapshot) {
             activityIdmListener?.onFail(snapshot)
         }
-        override fun onInterrupt(snapshot: Snapshot) {
-            activityIdmListener?.onInterrupt(snapshot)
+        override fun onInterrupt(snapshot: Snapshot, e: Exception?) {
+            activityIdmListener?.onInterrupt(snapshot, e)
         }
     }
 

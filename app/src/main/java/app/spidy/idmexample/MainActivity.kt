@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         override fun onFail(snapshot: Snapshot) {
             debug("onFail")
         }
-        override fun onInterrupt(snapshot: Snapshot) {
+        override fun onInterrupt(snapshot: Snapshot, e: Exception?) {
             this@MainActivity.snapshot = snapshot
             debug("onInterrupt")
         }
