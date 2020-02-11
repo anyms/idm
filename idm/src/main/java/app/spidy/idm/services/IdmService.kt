@@ -205,14 +205,18 @@ class IdmService: Service() {
                 .ifException {
                     outputStream?.flush()
                     outputStream?.close()
-                    idmListener?.onInterrupt(snapshot)
-                    onUiThread { download() }
+                    onUiThread {
+                        idmListener?.onInterrupt(snapshot)
+                        download()
+                    }
                 }
                 .ifFailed {
                     outputStream?.flush()
                     outputStream?.close()
-                    idmListener?.onFail(snapshot)
-                    onUiThread { download() }
+                    onUiThread {
+                        idmListener?.onFail(snapshot)
+                        download()
+                    }
                 }
                 .ifStream { buffer, byteSize ->
                     progress =
@@ -220,7 +224,10 @@ class IdmService: Service() {
                     if (byteSize == -1) {
                         outputStream?.flush()
                         outputStream?.close()
-                        onUiThread { download() }
+                        onUiThread {
+                            idmListener?.onFinish(snapshot)
+                            download()
+                        }
                     } else {
                         outputStream?.write(buffer!!, 0, byteSize)
                         snapshot.downloadedSize += byteSize
@@ -236,19 +243,25 @@ class IdmService: Service() {
             caller =
                 hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
                     .ifFailed {
-                        idmListener?.onFail(snapshot)
-                        onUiThread { download() }
+                        onUiThread {
+                            idmListener?.onFail(snapshot)
+                            download()
+                        }
                     }
                     .ifException { e ->
-                        idmListener?.onInterrupt(snapshot)
-                        onUiThread { download() }
+                        onUiThread {
+                            idmListener?.onInterrupt(snapshot)
+                            download()
+                        }
                     }
                     .ifStream { buffer, byteSize ->
                         progress =
                             (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                         if (byteSize == -1) {
                             debug("Recursive called")
-                            onUiThread { downloadQStream(outputStream, count+1) }
+                            onUiThread {
+                                downloadQStream(outputStream, count+1)
+                            }
                         } else {
                             outputStream?.write(buffer!!, 0, byteSize)
                             snapshot.downloadedSize += byteSize
@@ -258,6 +271,7 @@ class IdmService: Service() {
         } else {
             outputStream?.flush()
             outputStream?.close()
+            idmListener?.onFinish(snapshot)
             download()
         }
     }
@@ -268,12 +282,16 @@ class IdmService: Service() {
             caller =
                 hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
                     .ifFailed {
-                        idmListener?.onFail(snapshot)
-                        onUiThread { download() }
+                        onUiThread {
+                            idmListener?.onFail(snapshot)
+                            download()
+                        }
                     }
                     .ifException { e ->
-                        idmListener?.onInterrupt(snapshot)
-                        onUiThread { download() }
+                        onUiThread {
+                            idmListener?.onInterrupt(snapshot)
+                            download()
+                        }
                     }
                     .ifStream { buffer, byteSize ->
                         progress =
@@ -289,6 +307,7 @@ class IdmService: Service() {
                     .finally { }
         } else {
             file.close()
+            idmListener?.onFinish(snapshot)
             download()
         }
     }
@@ -311,20 +330,27 @@ class IdmService: Service() {
             caller = hiper.get(snapshot.url, headers = headers, isStream = true)
                 .ifException {
                     file.close()
-                    idmListener?.onInterrupt(snapshot)
-                    onUiThread { download() }
+                    onUiThread {
+                        idmListener?.onInterrupt(snapshot)
+                        download()
+                    }
                 }
                 .ifFailed {
                     file.close()
-                    idmListener?.onFail(snapshot)
-                    onUiThread { download() }
+                    onUiThread {
+                        idmListener?.onFail(snapshot)
+                        download()
+                    }
                 }
                 .ifStream { buffer, byteSize ->
                     progress =
                         (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                     if (byteSize == -1) {
                         file.close()
-                        onUiThread { download() }
+                        onUiThread {
+                            idmListener?.onFinish(snapshot)
+                            download()
+                        }
                     } else {
                         file.write(buffer!!, 0, byteSize)
                         snapshot.downloadedSize += byteSize
