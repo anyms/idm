@@ -44,6 +44,7 @@ class IdmService: Service() {
     private var caller: Caller? = null
 
     var idmListener: IdmListener? = null
+    var isRunning = true
 
     override fun onBind(intent: Intent?): IBinder? {
         return IdmBinder()
@@ -56,6 +57,7 @@ class IdmService: Service() {
         notification.setSmallIcon(android.R.drawable.stat_sys_download)
         notification.setOnlyAlertOnce(true)
         notification.color = ContextCompat.getColor(this@IdmService, R.color.colorAccent)
+        isRunning = true
 
         startForeground(STICKY_NOTIFICATION_ID, notification.build())
         return START_NOT_STICKY
@@ -63,6 +65,10 @@ class IdmService: Service() {
 
     fun addQueue(snapshot: Snapshot) {
         queue.add(snapshot)
+    }
+
+    fun removeQueue(snapshot: Snapshot) {
+        queue.remove(snapshot)
     }
 
     private fun calcSpeed() {
@@ -380,6 +386,12 @@ class IdmService: Service() {
 
     private fun updateNotification(notification: NotificationCompat.Builder) {
         notificationManager.notify(STICKY_NOTIFICATION_ID, notification.build())
+    }
+
+
+    override fun onDestroy() {
+        isRunning = false
+        super.onDestroy()
     }
 
 

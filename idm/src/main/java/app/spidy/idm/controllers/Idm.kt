@@ -71,6 +71,10 @@ class Idm(private val context: Context) {
         }
     }
 
+    fun removeQueue(snapshot: Snapshot) {
+        idmService?.removeQueue(snapshot)
+    }
+
     fun kill() {
         unbind()
         context.stopService(Intent(context, IdmService::class.java))
