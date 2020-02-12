@@ -12,5 +12,6 @@ data class Snapshot(
     var isStream: Boolean = false,
     val streamUrls: ArrayList<String> = arrayListOf(),
     var downloadSpeed: String = "0Kb/s",
-    var remainingTime: String = "0sec"
+    var remainingTime: String = "0sec",
+    var userAgent: String = "Idm/1.0"
 )

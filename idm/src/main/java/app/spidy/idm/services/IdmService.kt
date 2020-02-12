@@ -133,7 +133,7 @@ class IdmService: Service() {
                 onUiThread { callback(snp) }
             }
             snp.totalSize == 0L -> {
-                hiper.head(snp.url)
+                hiper.head(snp.url, headers = hashMapOf("User-Agent" to snapshot.userAgent))
                     .ifException {
                         debug("Error: ${it?.message}")
                     }
@@ -145,6 +145,7 @@ class IdmService: Service() {
                         snp.mimeType = headerResponse.headers.get("content-type")!!.toString()
                         val tmpHeaders: HashMap<String, Any?> = hashMapOf()
                         tmpHeaders["range"] = "bytes=0-0"
+                        tmpHeaders["user-agent"] = snapshot.userAgent
                         if (snp.fileName == null) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                 snp.fileName = URLUtil.guessFileName(snp.url, headerResponse.headers.get("content-disposition"), snp.mimeType)
@@ -180,6 +181,7 @@ class IdmService: Service() {
 
     private fun downloadQ() {
         val headers = HashMap<String, Any?>()
+        headers["user-agent"] = snapshot.userAgent
         snapshot.downloadedSize = 0
         snapshot.isResumable = false
 
@@ -241,7 +243,7 @@ class IdmService: Service() {
         if (snapshot.streamUrls.size > count) {
             debug("URL: ${snapshot.streamUrls[count]}")
             caller =
-                hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
+                hiper.get(snapshot.streamUrls[count], headers = hashMapOf("User-Agent" to snapshot.userAgent), isStream = true)
                     .ifFailed {
                         onUiThread {
                             idmListener?.onFail(snapshot)
@@ -280,7 +282,7 @@ class IdmService: Service() {
         if (snapshot.streamUrls.size > count) {
             debug("URL: ${snapshot.streamUrls[count]}")
             caller =
-                hiper.get(snapshot.streamUrls[count], headers = hashMapOf(), isStream = true)
+                hiper.get(snapshot.streamUrls[count], headers = hashMapOf("User-Agent" to snapshot.userAgent), isStream = true)
                     .ifFailed {
                         onUiThread {
                             idmListener?.onFail(snapshot)
@@ -314,6 +316,7 @@ class IdmService: Service() {
 
     private fun downloadLegacy() {
         val headers = HashMap<String, Any?>()
+        headers["user-agent"] = snapshot.userAgent
 
         if (snapshot.isResumable) {
             headers["range"] = "bytes=${snapshot.downloadedSize}-${snapshot.totalSize}"
