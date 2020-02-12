@@ -100,8 +100,8 @@ class IdmService: Service() {
             idmListener?.onDone()
             debug("Done.")
         } else {
-            prepare(queue.removeAt(0)) {
-                snapshot = it
+            snapshot = queue.removeAt(0)
+            prepare(snapshot) {
                 if (!isCalcSpeedRunning) calcSpeed()
                 idmListener?.onStart(snapshot)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
