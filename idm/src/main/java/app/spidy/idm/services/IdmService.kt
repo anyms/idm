@@ -41,9 +41,6 @@ class IdmService: Service() {
     private lateinit var notification: NotificationCompat.Builder
     private lateinit var notificationManager: NotificationManagerCompat
     private val queues = ArrayList<Snapshot>()
-    private var downloadSpeed: String = "0Kb/s"
-    private var remainingTime: String = "0sec"
-    private var progress: Int = 0
     private var isDone = false
     private val hiper = Hiper()
     private var prevDownloaded = 0L
@@ -151,10 +148,8 @@ class IdmService: Service() {
             if (prevDownloaded != 0L) {
                 val downloadPerSec = snapshot.downloadedSize - prevDownloaded
                 if (downloadPerSec != 0L) {
-                    downloadSpeed = "${formatBytes(downloadPerSec, true)}/s"
-                    remainingTime = secsToTime((snapshot.totalSize - snapshot.downloadedSize) / downloadPerSec)
-                    snapshot.downloadSpeed = downloadSpeed
-                    snapshot.remainingTime = remainingTime
+                    snapshot.downloadSpeed = "${formatBytes(downloadPerSec, true)}/s"
+                    snapshot.remainingTime = secsToTime((snapshot.totalSize - snapshot.downloadedSize) / downloadPerSec)
                 }
             }
             prevDownloaded = snapshot.downloadedSize
@@ -190,6 +185,7 @@ class IdmService: Service() {
     private fun prepare(snp: Snapshot, callback: (Snapshot) -> Unit) {
         when {
             snp.isStream -> {
+                snp.fileName = URLUtil.guessFileName(snp.url, null, null).replace(".m3u8", ".mpg")
                 snp.isResumable = false
                 onUiThread { callback(snp) }
             }
@@ -213,17 +209,15 @@ class IdmService: Service() {
                         val tmpHeaders: HashMap<String, Any?> = hashMapOf()
                         tmpHeaders["range"] = "bytes=0-0"
                         tmpHeaders["user-agent"] = snapshot.userAgent
-                        if (snp.fileName == null) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                snp.fileName = URLUtil.guessFileName(snp.url, headerResponse.headers.get("content-disposition"), snp.mimeType)
-                            } else {
-                                snp.fileName = guessFileName(
-                                    snp.destUri!!,
-                                    snp.url,
-                                    snp.mimeType,
-                                    headerResponse.headers.get("content-disposition")
-                                )
-                            }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            snp.fileName = URLUtil.guessFileName(snp.url, headerResponse.headers.get("content-disposition"), snp.mimeType)
+                        } else {
+                            snp.fileName = guessFileName(
+                                snp.destUri,
+                                snp.url,
+                                snp.mimeType,
+                                headerResponse.headers.get("content-disposition")
+                            )
                         }
                         hiper.get(snp.url, headers = tmpHeaders)
                             .ifException {
@@ -257,7 +251,7 @@ class IdmService: Service() {
             snapshot.mimeType = "video/MP2T"
         }
 
-        val fileName = snapshot.fileName?.split(".")?.dropLast(1)?.joinToString(".")
+        val fileName = snapshot.fileName.split(".").dropLast(1).joinToString(".")
 
         val resolver = contentResolver
         val contentValues = ContentValues().apply {
@@ -287,7 +281,7 @@ class IdmService: Service() {
                     }
                 }
                 .ifStream { buffer, byteSize ->
-                    progress =
+                    snapshot.progress =
                         (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                     if (byteSize == -1) {
                         outputStream?.flush()
@@ -320,7 +314,7 @@ class IdmService: Service() {
                         }
                     }
                     .ifStream { buffer, byteSize ->
-                        progress =
+                        snapshot.progress =
                             (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                         if (byteSize == -1) {
                             debug("Recursive called")
@@ -356,7 +350,7 @@ class IdmService: Service() {
                         }
                     }
                     .ifStream { buffer, byteSize ->
-                        progress =
+                        snapshot.progress =
                             (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                         if (byteSize == -1) {
                             debug("Recursive called")
@@ -403,7 +397,7 @@ class IdmService: Service() {
                     }
                 }
                 .ifStream { buffer, byteSize ->
-                    progress =
+                    snapshot.progress =
                         (snapshot.downloadedSize / snapshot.totalSize.toFloat() * 100.0).toInt()
                     if (byteSize == -1) {
                         file.close()
@@ -451,10 +445,10 @@ class IdmService: Service() {
     private fun updateInfo(title: String?, downloadedSize: Long, totalSize: Long) {
         notification.setContentTitle(title)
         notification.setContentText("${formatBytes(downloadedSize)}/${formatBytes(totalSize)}")
-        notification.setContentInfo(downloadSpeed)
-        notification.setProgress(100, progress, false)
+        notification.setContentInfo(snapshot.downloadSpeed)
+        notification.setProgress(100, snapshot.progress, false)
         updateNotification(notification)
-        idmListener.onProgress(snapshot, progress)
+        idmListener.onProgress(snapshot, snapshot.progress)
     }
 
     private fun updateNotification(notification: NotificationCompat.Builder) {
