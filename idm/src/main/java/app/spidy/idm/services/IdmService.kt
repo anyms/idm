@@ -6,34 +6,41 @@ import android.content.ContentValues
 import android.content.Intent
 import android.os.*
 import android.provider.MediaStore
+import android.util.Log
 import android.webkit.URLUtil
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.room.Room
 import app.spidy.hiper.controllers.Caller
 import app.spidy.hiper.controllers.Hiper
 import app.spidy.idm.App
 import app.spidy.idm.R
+import app.spidy.idm.controllers.Idm
 import app.spidy.idm.controllers.formatBytes
 import app.spidy.idm.controllers.guessFileName
 import app.spidy.idm.controllers.secsToTime
 import app.spidy.idm.data.Snapshot
+import app.spidy.idm.databases.IdmDatabase
 import app.spidy.idm.interfaces.IdmListener
 import app.spidy.kotlinutils.debug
+import app.spidy.kotlinutils.ignore
 import app.spidy.kotlinutils.onUiThread
 import java.io.File
 import java.io.OutputStream
 import java.io.RandomAccessFile
+import kotlin.concurrent.thread
 
 class IdmService: Service() {
     companion object {
         const val STICKY_NOTIFICATION_ID = 101
     }
 
+    private lateinit var db: IdmDatabase
     private lateinit var snapshot: Snapshot
     private lateinit var notification: NotificationCompat.Builder
     private lateinit var notificationManager: NotificationManagerCompat
-    private val queue = ArrayList<Snapshot>()
+    private val queues = ArrayList<Snapshot>()
     private var downloadSpeed: String = "0Kb/s"
     private var remainingTime: String = "0sec"
     private var progress: Int = 0
@@ -42,15 +49,68 @@ class IdmService: Service() {
     private var prevDownloaded = 0L
     private var isCalcSpeedRunning = false
     private var caller: Caller? = null
-
-    var idmListener: IdmListener? = null
     var isRunning = true
+    var onExit: (() -> Unit)? = null
+
+    var queue: Snapshot
+        get() = queues[0]
+        set(value) {
+            thread {
+                snapshot.status = Snapshot.STATUS_QUEUED
+                db.idmDao().putSnapshot(value)
+            }
+            queues.add(0, value)
+        }
+
+    private var idmListener = object : IdmListener {
+        override fun onDone() {
+            kill()
+            debug("Done")
+        }
+        override fun onFinish(snapshot: Snapshot) {
+            snapshot.status = Snapshot.STATUS_COMPLETED
+            thread {
+                db.idmDao().updateSnapshot(snapshot)
+                onUiThread { download() }
+            }
+            debug("Finish")
+        }
+        override fun onStart(snapshot: Snapshot) {
+            snapshot.status = Snapshot.STATUS_DOWNLOADING
+            thread {
+                db.idmDao().updateSnapshot(snapshot)
+            }
+            debug("Start")
+        }
+        override fun onProgress(snapshot: Snapshot, progress: Int) {
+            Idm.onProgress?.invoke(snapshot, progress)
+        }
+        override fun onInterrupt(snapshot: Snapshot, e: Exception?) {
+            snapshot.status = Snapshot.STATUS_PAUSED
+            thread {
+                db.idmDao().updateSnapshot(snapshot)
+                onUiThread { download() }
+            }
+            debug("Interrupt")
+        }
+        override fun onFail(snapshot: Snapshot) {
+            snapshot.status = Snapshot.STATUS_FAILED
+            debug(snapshot)
+            thread {
+                db.idmDao().updateSnapshot(snapshot)
+                onUiThread { download() }
+            }
+            debug("Fail")
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? {
         return IdmBinder()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        db = Room.databaseBuilder(this, IdmDatabase::class.java, "IdmDatabase")
+            .fallbackToDestructiveMigration().build()
         notificationManager = NotificationManagerCompat.from(this@IdmService)
         notification = NotificationCompat.Builder(this@IdmService, App.CHANNEL_ID)
         notification.setProgress(100, 0, true)
@@ -63,12 +123,9 @@ class IdmService: Service() {
         return START_NOT_STICKY
     }
 
-    fun addQueue(snapshot: Snapshot) {
-        queue.add(snapshot)
-    }
-
-    fun removeQueue(snapshot: Snapshot) {
-        queue.remove(snapshot)
+    private fun kill() {
+        ignore { onExit?.invoke() }
+        stopSelf()
     }
 
     private fun calcSpeed() {
@@ -93,7 +150,6 @@ class IdmService: Service() {
             if (!isDone) {
                 calcSpeed()
             } else {
-                debug("kill it")
                 isCalcSpeedRunning = false
                 notificationManager.cancel(STICKY_NOTIFICATION_ID)
             }
@@ -101,15 +157,15 @@ class IdmService: Service() {
     }
 
     fun download() {
-        if (queue.isEmpty()) {
+        if (queues.isEmpty()) {
             isDone = true
-            idmListener?.onDone()
+            idmListener.onDone()
             debug("Done.")
         } else {
-            snapshot = queue.removeAt(0)
+            snapshot = queues.removeAt(0)
             prepare(snapshot) {
                 if (!isCalcSpeedRunning) calcSpeed()
-                idmListener?.onStart(snapshot)
+                idmListener.onStart(snapshot)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     downloadQ()
                 } else{
@@ -123,28 +179,21 @@ class IdmService: Service() {
         when {
             snp.isStream -> {
                 snp.isResumable = false
-                // TODO: change the extension
-                if (snp.fileName == null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        snp.fileName = URLUtil.guessFileName(snp.url, null, null)
-                    } else {
-                        snp.fileName = guessFileName(
-                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath,
-                            snp.url,
-                            null,
-                            null
-                        )
-                    }
-                }
                 onUiThread { callback(snp) }
             }
             snp.totalSize == 0L -> {
                 hiper.head(snp.url, headers = hashMapOf("User-Agent" to snapshot.userAgent))
                     .ifException {
                         debug("Error: ${it?.message}")
+                        onUiThread {
+                            idmListener.onFail(snp)
+                        }
                     }
                     .ifFailed {
                         debug("Request failed on headers")
+                        onUiThread {
+                            idmListener.onFail(snp)
+                        }
                     }
                     .finally { headerResponse ->
                         snp.totalSize = headerResponse.headers.get("content-length")!!.toLong()
@@ -157,7 +206,7 @@ class IdmService: Service() {
                                 snp.fileName = URLUtil.guessFileName(snp.url, headerResponse.headers.get("content-disposition"), snp.mimeType)
                             } else {
                                 snp.fileName = guessFileName(
-                                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath,
+                                    snp.destUri!!,
                                     snp.url,
                                     snp.mimeType,
                                     headerResponse.headers.get("content-disposition")
@@ -167,6 +216,7 @@ class IdmService: Service() {
                         hiper.get(snp.url, headers = tmpHeaders)
                             .ifException {
                                 debug("Error: ${it?.message}")
+                                onUiThread { callback(snp) }
                             }
                             .ifFailed {
                                 debug("Request failed on resume check")
@@ -201,7 +251,7 @@ class IdmService: Service() {
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
             put(MediaStore.MediaColumns.MIME_TYPE, snapshot.mimeType)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/Fetcher")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, snapshot.destUri)
         }
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
         val outputStream: OutputStream? = if (uri == null) null else resolver.openOutputStream(uri)
@@ -214,16 +264,14 @@ class IdmService: Service() {
                     outputStream?.flush()
                     outputStream?.close()
                     onUiThread {
-                        idmListener?.onInterrupt(snapshot, e)
-                        download()
+                        idmListener.onInterrupt(snapshot, e)
                     }
                 }
                 .ifFailed {
                     outputStream?.flush()
                     outputStream?.close()
                     onUiThread {
-                        idmListener?.onFail(snapshot)
-                        download()
+                        idmListener.onFail(snapshot)
                     }
                 }
                 .ifStream { buffer, byteSize ->
@@ -233,8 +281,7 @@ class IdmService: Service() {
                         outputStream?.flush()
                         outputStream?.close()
                         onUiThread {
-                            idmListener?.onFinish(snapshot)
-                            download()
+                            idmListener.onFinish(snapshot)
                         }
                     } else {
                         outputStream?.write(buffer!!, 0, byteSize)
@@ -252,14 +299,12 @@ class IdmService: Service() {
                 hiper.get(snapshot.streamUrls[count], headers = hashMapOf("User-Agent" to snapshot.userAgent), isStream = true)
                     .ifFailed {
                         onUiThread {
-                            idmListener?.onFail(snapshot)
-                            download()
+                            idmListener.onFail(snapshot)
                         }
                     }
                     .ifException { e ->
                         onUiThread {
-                            idmListener?.onInterrupt(snapshot, e)
-                            download()
+                            idmListener.onInterrupt(snapshot, e)
                         }
                     }
                     .ifStream { buffer, byteSize ->
@@ -279,8 +324,7 @@ class IdmService: Service() {
         } else {
             outputStream?.flush()
             outputStream?.close()
-            idmListener?.onFinish(snapshot)
-            download()
+            idmListener.onFinish(snapshot)
         }
     }
 
@@ -291,14 +335,12 @@ class IdmService: Service() {
                 hiper.get(snapshot.streamUrls[count], headers = hashMapOf("User-Agent" to snapshot.userAgent), isStream = true)
                     .ifFailed {
                         onUiThread {
-                            idmListener?.onFail(snapshot)
-                            download()
+                            idmListener.onFail(snapshot)
                         }
                     }
                     .ifException { e ->
                         onUiThread {
-                            idmListener?.onInterrupt(snapshot, e)
-                            download()
+                            idmListener.onInterrupt(snapshot, e)
                         }
                     }
                     .ifStream { buffer, byteSize ->
@@ -315,8 +357,7 @@ class IdmService: Service() {
                     .finally { }
         } else {
             file.close()
-            idmListener?.onFinish(snapshot)
-            download()
+            idmListener.onFinish(snapshot)
         }
     }
 
@@ -340,15 +381,13 @@ class IdmService: Service() {
                 .ifException { e ->
                     file.close()
                     onUiThread {
-                        idmListener?.onInterrupt(snapshot, e)
-                        download()
+                        idmListener.onInterrupt(snapshot, e)
                     }
                 }
                 .ifFailed {
                     file.close()
                     onUiThread {
-                        idmListener?.onFail(snapshot)
-                        download()
+                        idmListener.onFail(snapshot)
                     }
                 }
                 .ifStream { buffer, byteSize ->
@@ -357,8 +396,7 @@ class IdmService: Service() {
                     if (byteSize == -1) {
                         file.close()
                         onUiThread {
-                            idmListener?.onFinish(snapshot)
-                            download()
+                            idmListener.onFinish(snapshot)
                         }
                     } else {
                         file.write(buffer!!, 0, byteSize)
@@ -370,8 +408,31 @@ class IdmService: Service() {
     }
 
 
-    fun pause() {
-        caller?.cancel()
+    private fun findSnapIndex(uId: String, callback: (index: Int) -> Unit) {
+        var index = -1
+        for (i in 0 until queues.size) {
+            if (queues[i].uId == uId) {
+                index = i
+                break
+            }
+        }
+        callback(index)
+    }
+
+
+    fun pause(snapshot: Snapshot) {
+        findSnapIndex(snapshot.uId) {
+            if (it == -1) {
+                caller?.cancel()
+            } else {
+                val snp = queues[it]
+                snp.status = Snapshot.STATUS_PAUSED
+                thread {
+                    db.idmDao().updateSnapshot(snp)
+                }
+                queues.removeAt(it)
+            }
+        }
     }
 
 
@@ -381,7 +442,7 @@ class IdmService: Service() {
         notification.setContentInfo(downloadSpeed)
         notification.setProgress(100, progress, false)
         updateNotification(notification)
-        idmListener?.onProgress(snapshot, progress)
+        idmListener.onProgress(snapshot, progress)
     }
 
     private fun updateNotification(notification: NotificationCompat.Builder) {

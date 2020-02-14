@@ -4,18 +4,19 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ProgressBar
-import android.widget.TextView
+import android.widget.*
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import app.spidy.hiper.controllers.Hiper
 import app.spidy.idm.controllers.Idm
 import app.spidy.idm.data.Snapshot
 import app.spidy.idm.interfaces.IdmListener
+import app.spidy.idm.services.IdmService
 import app.spidy.kotlinutils.DEBUG_MODE
 import app.spidy.kotlinutils.debug
 import java.lang.Exception
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
@@ -24,40 +25,6 @@ class MainActivity : AppCompatActivity() {
     init {
         DEBUG_MODE = true
     }
-
-    private val links = arrayListOf(
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment1_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment2_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment3_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment4_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment5_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment6_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment7_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment8_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment9_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment10_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment11_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment12_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment13_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment14_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment15_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment16_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment17_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment18_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment19_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment20_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment21_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment22_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment23_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment24_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment25_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment26_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment27_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment28_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b",
-        "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/segment29_0_a.ts?set-akamai-hls-revision=5&hdntl=exp=1581172329~acl=/i/songs/41/2742841/28236538/28236538_64.mp4/*~data=hdntl~hmac=461e84d546bb88001e8e76aa7572c15e090b62a0556529d91a6f200bd931e92b"
-    )
-
-
 
     private lateinit var downloadBtn: Button
     private lateinit var urlField: EditText
@@ -68,44 +35,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var resumeBtn: Button
 
     private lateinit var snapshot: Snapshot
+    private lateinit var adapter: SnapAdapter
+    private lateinit var idm: Idm
 
-
-    private val idm = Idm(this)
-    private val hiper = Hiper()
-    private val hiperLegacy = hiper.Legacy()
-    private val headers: HashMap<String, Any?> = hashMapOf(
-        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-    )
-
-    private val idmListener = object : IdmListener {
-        override fun onFinish(snapshot: Snapshot) {
-
-        }
-        override fun onDone() {
-            fileNameView.text = "Done!"
-        }
-        override fun onStart(snapshot: Snapshot) {
-            fileNameView.text = snapshot.fileName
-            debug("onStart")
-        }
-        override fun onProgress(snapshot: Snapshot, progress: Int) {
-            progressBar.progress = progress
-        }
-        override fun onFail(snapshot: Snapshot) {
-            debug("onFail")
-        }
-        override fun onInterrupt(snapshot: Snapshot, e: Exception?) {
-            this@MainActivity.snapshot = snapshot
-            debug("onInterrupt")
-        }
-    }
-
+    private val snaps = ArrayList<Snapshot>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         PermissionHandler.requestStorage(this, "need storage permission") {}
+
+        idm = Idm(this)
 
         downloadBtn = findViewById(R.id.download_button)
         urlField = findViewById(R.id.url_field)
@@ -114,50 +55,70 @@ class MainActivity : AppCompatActivity() {
         fileNameField = findViewById(R.id.filename_field)
         pauseBtn = findViewById(R.id.pause_button)
         resumeBtn = findViewById(R.id.resume_button)
+        val recyclerView: RecyclerView = findViewById(R.id.recycler_view)
+        adapter = SnapAdapter(this, snaps, idm) {
+            updateView()
+        }
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
 
 
         val snapshot = Snapshot(
             uId = UUID.randomUUID().toString(),
-            url = "https://sohowww.nascom.nasa.gov/gallery/Movies/animation/Solarwind.mpg",
-            destUri = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
+            url = "https://sohowww.nascom.nasa.gov/gallery/Movies/animation/Solarwind.mpg"
         )
 
-
-        thread {
-            for (link in links) {
-                try {
-                    val resp = hiperLegacy.head(link, headers = headers)
-                    if (!resp.isSuccessful) break
-                    snapshot.totalSize += resp.headers.get("content-length")!!.toLong()
-                } catch (e: Exception) {
-                    break
-                }
-            }
-
-            debug(snapshot.totalSize.toString())
-        }
-
-//        val snapshot = Snapshot(
-//            uId = UUID.randomUUID().toString(),
-//            url = "https://www.cinemaworldtheaters.com/trailers/bombshell.mp4",
-//            fileName = "bombshell.mp4",
-//            destUri = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
-//        )
-
         downloadBtn.setOnClickListener {
-            idm.run(idmListener)
-            idm.addQueue(snapshot)
+            idm.download(snapshot)
         }
 
-        pauseBtn.setOnClickListener {
-            idm.pause()
-        }
+        Idm.onProgress = { snp, progress ->
+            progressBar.progress = progress
+            urlField.setText(snp.url)
+            fileNameField.setText(snp.fileName)
 
-        resumeBtn.setOnClickListener {
-            idm.run(idmListener)
-            idm.addQueue(snapshot)
+            findSnapIndex(snp.uId) { index ->
+                snaps[index].progress = progress
+                snaps[index].downloadSpeed = snp.downloadSpeed
+                snaps[index].remainingTime = snp.remainingTime
+                snaps[index].downloadedSize = snp.downloadedSize
+
+                adapter.notifyItemChanged(index)
+            }
         }
     }
+
+
+    private fun findSnapIndex(uId: String, callback: (index: Int) -> Unit) {
+        var index = -1
+        for (i in 0 until snaps.size) {
+            if (snaps[i].uId == uId) {
+                index = i
+                break
+            }
+        }
+        if (index != -1) {
+            callback(index)
+        }
+    }
+
+
+    private fun updateView() {
+        idm.getSnapshots {
+            snaps.clear()
+            it.forEach { snap ->
+                snaps.add(snap)
+            }
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+
+    override fun onResume() {
+        updateView()
+        super.onResume()
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()

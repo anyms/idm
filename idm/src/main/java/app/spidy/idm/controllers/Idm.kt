@@ -1,43 +1,31 @@
 package app.spidy.idm.controllers
 
 import android.content.*
+import android.os.Build
+import android.os.Environment
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.util.Log
+import androidx.room.Room
 import app.spidy.idm.data.Snapshot
+import app.spidy.idm.databases.IdmDatabase
 import app.spidy.idm.interfaces.IdmListener
 import app.spidy.idm.services.IdmService
+import app.spidy.kotlinutils.onUiThread
 import java.io.FileOutputStream
 import java.lang.IllegalArgumentException
+import kotlin.concurrent.thread
 
 class Idm(private val context: Context) {
-    private var idmService: IdmService? = null
-    private val snapshots = ArrayList<Snapshot>()
-
-    private var activityIdmListener: IdmListener? = null
-    private val idmListener = object : IdmListener {
-        override fun onFinish(snapshot: Snapshot) {
-            activityIdmListener?.onFinish(snapshot)
-        }
-        override fun onDone() {
-            kill()
-            activityIdmListener?.onDone()
-        }
-        override fun onStart(snapshot: Snapshot) {
-            activityIdmListener?.onStart(snapshot)
-        }
-        override fun onProgress(snapshot: Snapshot, progress: Int) {
-            activityIdmListener?.onProgress(snapshot, progress)
-        }
-        override fun onFail(snapshot: Snapshot) {
-            activityIdmListener?.onFail(snapshot)
-        }
-        override fun onInterrupt(snapshot: Snapshot, e: Exception?) {
-            activityIdmListener?.onInterrupt(snapshot, e)
-        }
+    companion object {
+        var onProgress: ((snapshot: Snapshot, progress: Int) -> Unit)? = null
     }
 
+    private var idmService: IdmService? = null
+    private val tmpSnaps = ArrayList<Snapshot>()
+    private var db: IdmDatabase = Room.databaseBuilder(context, IdmDatabase::class.java, "IdmDatabase")
+        .fallbackToDestructiveMigration().build()
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -46,33 +34,57 @@ class Idm(private val context: Context) {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val idmBinder = service as? IdmService.IdmBinder
             idmService = idmBinder?.service
-            idmService?.idmListener = idmListener
+            idmService?.onExit = {
+                unbind()
+            }
 
-            for (snp in snapshots) idmService?.addQueue(snp)
-            snapshots.clear()
+            for (snp in tmpSnaps) idmService?.queue = snp
+            tmpSnaps.clear()
             idmService?.download()
         }
     }
 
-    fun run(idmListener: IdmListener) {
+
+    fun getSnapshots(callback: (List<Snapshot>) -> Unit) {
+        thread {
+            val snaps = db.idmDao().getSnapshots()
+
+            onUiThread {
+                callback(snaps)
+            }
+        }
+    }
+
+    fun download(snapshot: Snapshot) {
+        if (snapshot.status == Snapshot.STATUS_NEW) {
+            snapshot.destUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                "Download/Fetcher"
+            } else {
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
+            }
+        }
+
         if (idmService == null) {
-            activityIdmListener = idmListener
             val intent = Intent(context, IdmService::class.java)
             context.startService(intent)
             context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
-    }
-
-    fun addQueue(snapshot: Snapshot) {
         if (idmService == null) {
-            snapshots.add(snapshot)
+            tmpSnaps.add(snapshot)
         } else {
-            idmService?.addQueue(snapshot)
+            idmService?.queue = snapshot
         }
     }
 
-    fun removeQueue(snapshot: Snapshot) {
-        idmService?.removeQueue(snapshot)
+    fun pause(snapshot: Snapshot) {
+        idmService?.pause(snapshot)
+    }
+
+    fun delete(snapshot: Snapshot, callback: () -> Unit) {
+        thread {
+            db.idmDao().removeSnapshot(snapshot)
+            onUiThread { callback() }
+        }
     }
 
     fun kill() {
@@ -85,31 +97,5 @@ class Idm(private val context: Context) {
             context.unbindService(serviceConnection)
             idmService = null
         } catch (e: IllegalArgumentException) {}
-    }
-
-
-    fun pause() {
-        idmService?.pause()
-    }
-
-
-
-
-
-
-    fun downloadQ() {
-        val resolver = context.contentResolver
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "CuteKitten001")
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "DCIM/PerracoLabs")
-        }
-
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-        val file: ParcelFileDescriptor? = if (uri == null) null else resolver.openFileDescriptor(uri, "rw")
-        val out = FileOutputStream(file?.fileDescriptor!!)
-        val channel = out.channel
-        channel.position(0L)
-//        channel.write(ByteBuffer.wrap())
     }
 }

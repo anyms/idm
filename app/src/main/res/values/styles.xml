@@ -8,4 +8,9 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+
+    <style name="AppTheme.ProgressBar" parent="@style/Theme.AppCompat">
+        <item name="colorAccent">@color/colorSemiBlack</item>
+    </style>
+
 </resources>
