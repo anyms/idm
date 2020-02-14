@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.util.Log
+import android.webkit.URLUtil
 import androidx.room.Room
 import app.spidy.idm.data.Snapshot
 import app.spidy.idm.databases.IdmDatabase
@@ -62,6 +63,12 @@ class Idm(private val context: Context) {
             } else {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
             }
+
+            snapshot.fileName = URLUtil.guessFileName(snapshot.url, null, null)
+            if (snapshot.isStream) {
+                snapshot.fileName = snapshot.fileName.replace(".m3u8", ".mpg")
+            }
+            snapshot.status = Snapshot.STATUS_QUEUED
         }
 
         if (idmService == null) {
