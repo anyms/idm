@@ -71,7 +71,10 @@ class IdmService: Service() {
             snapshot.status = Snapshot.STATUS_COMPLETED
             thread {
                 db.idmDao().updateSnapshot(snapshot)
-                onUiThread { download() }
+                onUiThread {
+                    download()
+                    Idm.onUpdate?.invoke(snapshot)
+                }
             }
             debug("Finish")
         }
@@ -79,17 +82,23 @@ class IdmService: Service() {
             snapshot.status = Snapshot.STATUS_DOWNLOADING
             thread {
                 db.idmDao().updateSnapshot(snapshot)
+                onUiThread {
+                    Idm.onUpdate?.invoke(snapshot)
+                }
             }
             debug("Start")
         }
         override fun onProgress(snapshot: Snapshot, progress: Int) {
-            Idm.onProgress?.invoke(snapshot, progress)
+            Idm.onUpdate?.invoke(snapshot)
         }
         override fun onInterrupt(snapshot: Snapshot, e: Exception?) {
             snapshot.status = Snapshot.STATUS_PAUSED
             thread {
                 db.idmDao().updateSnapshot(snapshot)
-                onUiThread { download() }
+                onUiThread {
+                    download()
+                    Idm.onUpdate?.invoke(snapshot)
+                }
             }
             debug("Interrupt")
         }
@@ -98,7 +107,10 @@ class IdmService: Service() {
             debug(snapshot)
             thread {
                 db.idmDao().updateSnapshot(snapshot)
-                onUiThread { download() }
+                onUiThread {
+                    download()
+                    Idm.onUpdate?.invoke(snapshot)
+                }
             }
             debug("Fail")
         }

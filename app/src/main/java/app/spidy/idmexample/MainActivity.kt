@@ -72,13 +72,13 @@ class MainActivity : AppCompatActivity() {
             idm.download(snapshot)
         }
 
-        Idm.onProgress = { snp, progress ->
-            progressBar.progress = progress
+        Idm.onUpdate = { snp ->
+            progressBar.progress = snp.progress
             urlField.setText(snp.url)
             fileNameField.setText(snp.fileName)
 
             findSnapIndex(snp.uId) { index ->
-                snaps[index].progress = progress
+                snaps[index].progress = snp.progress
                 snaps[index].downloadSpeed = snp.downloadSpeed
                 snaps[index].remainingTime = snp.remainingTime
                 snaps[index].downloadedSize = snp.downloadedSize

@@ -19,7 +19,7 @@ import kotlin.concurrent.thread
 
 class Idm(private val context: Context) {
     companion object {
-        var onProgress: ((snapshot: Snapshot, progress: Int) -> Unit)? = null
+        var onUpdate: ((snapshot: Snapshot) -> Unit)? = null
     }
 
     private var idmService: IdmService? = null
