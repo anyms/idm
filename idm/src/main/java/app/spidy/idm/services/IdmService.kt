@@ -435,6 +435,9 @@ class IdmService: Service() {
                 snp.status = Snapshot.STATUS_PAUSED
                 thread {
                     db.idmDao().updateSnapshot(snp)
+                    onUiThread {
+                        Idm.onUpdate?.invoke(snp)
+                    }
                 }
                 queues.removeAt(it)
             }
