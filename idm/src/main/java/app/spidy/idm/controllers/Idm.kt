@@ -83,8 +83,8 @@ class Idm(private val context: Context) {
         }
     }
 
-    fun pause(snapshot: Snapshot) {
-        idmService?.pause(snapshot)
+    fun pause(snapshot: Snapshot, isDownloading: Boolean) {
+        idmService?.pause(snapshot, isDownloading)
     }
 
     fun delete(snapshot: Snapshot, callback: () -> Unit) {

@@ -52,8 +52,8 @@ class IdmService: Service() {
     var queue: Snapshot
         get() = queues[0]
         set(value) {
+            value.status = Snapshot.STATUS_QUEUED
             thread {
-                snapshot.status = Snapshot.STATUS_QUEUED
                 db.idmDao().putSnapshot(value)
             }
             queues.add(0, value)
@@ -422,24 +422,22 @@ class IdmService: Service() {
                 break
             }
         }
-        callback(index)
+        if (index != -1) callback(index)
     }
 
 
-    fun pause(snapshot: Snapshot) {
-        findSnapIndex(snapshot.uId) {
-            if (it == -1) {
-                caller?.cancel()
-            } else {
+    fun pause(snapshot: Snapshot, isDownloading: Boolean) {
+        if (isDownloading) {
+            caller?.cancel()
+        } else {
+            findSnapIndex(snapshot.uId) {
                 val snp = queues[it]
                 snp.status = Snapshot.STATUS_PAUSED
                 thread {
                     db.idmDao().updateSnapshot(snp)
-                    onUiThread {
-                        Idm.onUpdate?.invoke(snp)
-                    }
                 }
                 queues.removeAt(it)
+                Idm.onUpdate?.invoke(snp)
             }
         }
     }
