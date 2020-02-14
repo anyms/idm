@@ -85,7 +85,7 @@ class SnapAdapter(
                 }
 
                 holder.quickControlImage.setOnClickListener {
-                    idm.pause(snaps[position])
+                    idm.pause(snaps[position], true)
                     updateView()
                 }
             }

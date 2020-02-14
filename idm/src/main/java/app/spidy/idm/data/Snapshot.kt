@@ -16,7 +16,7 @@ data class Snapshot(
     var mimeType: String = "text/plain",
     var destUri: String = "Download/Fetcher",
     var isStream: Boolean = false,
-    val streamUrls: List<String> = arrayListOf(),
+    var streamUrls: List<String> = arrayListOf(),
     var progress: Int = 0,
     var downloadSpeed: String = "0Kb/s",
     var remainingTime: String = "0sec",

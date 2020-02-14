@@ -43,6 +43,7 @@ class IdmService: Service() {
     private val queues = ArrayList<Snapshot>()
     private var isDone = false
     private val hiper = Hiper()
+    private val hiperLegacy = hiper.Legacy()
     private var prevDownloaded = 0L
     private var isCalcSpeedRunning = false
     private var caller: Caller? = null
@@ -186,6 +187,18 @@ class IdmService: Service() {
         when {
             snp.isStream -> {
                 snp.fileName = URLUtil.guessFileName(snp.url, null, null).replace(".m3u8", ".mpg")
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    snp.fileName = URLUtil.guessFileName(snp.url.replace(".m3u8", ".mpg"), null, null)
+                } else {
+                    snp.fileName = guessFileName(
+                        snp.destUri,
+                        snp.url.replace(".m3u8", ".mpg"),
+                        null,
+                        null
+                    )
+                }
+
                 snp.isResumable = false
                 onUiThread { callback(snp) }
             }

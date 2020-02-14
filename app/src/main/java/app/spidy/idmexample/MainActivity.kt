@@ -1,6 +1,7 @@
 package app.spidy.idmexample
 
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -15,6 +16,7 @@ import app.spidy.idm.services.IdmService
 import app.spidy.kotlinutils.DEBUG_MODE
 import app.spidy.kotlinutils.debug
 import java.lang.Exception
+import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -33,10 +35,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fileNameField: EditText
     private lateinit var pauseBtn: Button
     private lateinit var resumeBtn: Button
-
-    private lateinit var snapshot: Snapshot
-    private lateinit var adapter: SnapAdapter
     private lateinit var idm: Idm
+
+    private val hiper = Hiper()
+    private val hiperLegacy = hiper.Legacy()
 
     private val snaps = ArrayList<Snapshot>()
 
@@ -55,68 +57,53 @@ class MainActivity : AppCompatActivity() {
         fileNameField = findViewById(R.id.filename_field)
         pauseBtn = findViewById(R.id.pause_button)
         resumeBtn = findViewById(R.id.resume_button)
-        val recyclerView: RecyclerView = findViewById(R.id.recycler_view)
-        adapter = SnapAdapter(this, snaps, idm) {
-            updateView()
-        }
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
 
 
         val snapshot = Snapshot(
             uId = UUID.randomUUID().toString(),
-            url = "https://sohowww.nascom.nasa.gov/gallery/Movies/animation/Solarwind.mpg"
+            url = "https://vodhls-vh.akamaihd.net/i/songs/41/2742841/28236538/28236538_64.mp4/index_0_a.m3u8?set-akamai-hls-revision=5&hdntl=exp=1581795721~acl=%2fi%2fsongs%2f41%2f2742841%2f28236538%2f28236538_64.mp4%2f*~data=hdntl~hmac=fe07c10c29f5e48965db2f06bb85edd94a8820a543245216aae623588cc58636",
+            isStream = true
         )
 
         downloadBtn.setOnClickListener {
-            idm.download(snapshot)
-        }
-
-        Idm.onUpdate = { snp ->
-            progressBar.progress = snp.progress
-            urlField.setText(snp.url)
-            fileNameField.setText(snp.fileName)
-
-            findSnapIndex(snp.uId) { index ->
-                snaps[index].progress = snp.progress
-                snaps[index].downloadSpeed = snp.downloadSpeed
-                snaps[index].remainingTime = snp.remainingTime
-                snaps[index].downloadedSize = snp.downloadedSize
-
-                adapter.notifyItemChanged(index)
+            prepareStream(snapshot) { snp ->
+                idm.download(snp)
             }
         }
     }
 
-
-    private fun findSnapIndex(uId: String, callback: (index: Int) -> Unit) {
-        var index = -1
-        for (i in 0 until snaps.size) {
-            if (snaps[i].uId == uId) {
-                index = i
-                break
+    private fun parseStream(baseUrl: String, stream: String): ArrayList<String> {
+        val links = ArrayList<String>()
+        val lines = stream.split("\n")
+        for (line in lines) {
+            if (line.trim() != "" && !line.startsWith("#")) {
+                if (line.startsWith("https://") || line.startsWith("http://")) {
+                    links.add(line)
+                } else {
+                    val nodes = baseUrl.split("?")[0].split("#")[0].split("/").toMutableList()
+                    nodes.removeAt(nodes.size - 1)
+                    val uri = Uri.parse(nodes.joinToString("/") + "/")
+                        .buildUpon()   // Creates a "Builder"
+                        .appendEncodedPath(line)
+                        .build()
+                    links.add(uri.toString())
+                }
             }
         }
-        if (index != -1) {
-            callback(index)
-        }
+        return links
     }
 
-
-    private fun updateView() {
-        idm.getSnapshots {
-            snaps.clear()
-            it.forEach { snap ->
-                snaps.add(snap)
+    private fun prepareStream(snapshot: Snapshot, callback: (Snapshot) -> Unit) {
+        hiper.get(snapshot.url)
+            .ifFailedOrException {
+                debug("Failed")
             }
-            adapter.notifyDataSetChanged()
-        }
-    }
-
-
-    override fun onResume() {
-        updateView()
-        super.onResume()
+            .finally {
+                it.text?.also { streams ->
+                    snapshot.streamUrls = parseStream(snapshot.url, streams).toList()
+                    callback(snapshot)
+                }
+            }
     }
 
 
