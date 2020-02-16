@@ -472,6 +472,9 @@ class IdmService: Service() {
 
     override fun onDestroy() {
         isRunning = false
+        ignore {
+            pause(snapshot, true)
+        }
         super.onDestroy()
     }
 
