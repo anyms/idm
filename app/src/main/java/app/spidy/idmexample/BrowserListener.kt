@@ -2,11 +2,13 @@ package app.spidy.idmexample
 
 import android.util.Log
 import android.webkit.CookieManager
+import android.webkit.URLUtil
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.fragment.app.FragmentActivity
 import app.spidy.hiper.Hiper
 import app.spidy.idm.Idm
+import app.spidy.idm.data.Detect
 import app.spidy.kookaburra.controllers.Browser
 
 class BrowserListener(private val idm: Idm): Browser.Listener {
@@ -33,5 +35,25 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
                 cookies[nodes[0].trim()] = nodes[1].trim()
             }
         }
+    }
+
+    override fun onNewDownload(
+        view: WebView,
+        url: String,
+        userAgent: String,
+        contentDisposition: String,
+        mimetype: String,
+        contentLength: Long
+    ) {
+        val fileName = URLUtil.guessFileName(url, contentDisposition, mimetype)
+        val detect = Detect(
+            data = hashMapOf("url" to url, "filename" to fileName, "title" to view.title),
+            cookies = cookies,
+            requestHeaders = hashMapOf("user-agent" to userAgent),
+            responseHeaders = hashMapOf(),
+            type = Detect.TYPE_FILE,
+            isResumable = false
+        )
+        idm.queue(detect)
     }
 }

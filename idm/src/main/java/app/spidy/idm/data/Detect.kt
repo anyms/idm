@@ -14,5 +14,6 @@ data class Detect(
         const val TYPE_VIDEO = "app.spidy.idm.data.TYPE_VIDEO"
         const val TYPE_AUDIO = "app.spidy.idm.data.TYPE_AUDIO"
         const val TYPE_STREAM = "app.spidy.idm.data.TYPE_STREAM"
+        const val TYPE_FILE = "app.spidy.idm.data.TYPE_FILE"
     }
 }

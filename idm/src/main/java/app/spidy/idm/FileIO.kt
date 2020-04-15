@@ -30,12 +30,19 @@ class FileIO(private val context: Context) {
             val output = FileOutputStream(fileDescriptor)
             val buf = ByteArray(4096)
             var bytesRead = dataInputStream.read(buf)
-            var copiedBytes = bytesRead
+            var copiedBytes = bytesRead.toLong()
+            var lastProgress = 0
             while (bytesRead > 0) {
                 output.write(buf, 0, bytesRead)
-                copyListener?.onCopy((copiedBytes / file.length().toFloat() * 100).toInt())
-                bytesRead = dataInputStream.read(buf)
                 copiedBytes += bytesRead
+                listenProgress(copiedBytes, file.length()) {
+                    lastProgress = it
+                    copyListener?.onCopy(it)
+                }
+                bytesRead = dataInputStream.read(buf)
+            }
+            if (lastProgress != 100) {
+                copyListener?.onCopy(100)
             }
             dataInputStream.close()
             output.close()
@@ -49,12 +56,19 @@ class FileIO(private val context: Context) {
                 fis = FileInputStream(file)
                 val bytes = ByteArray(4096)
                 var bytesRead = fis.read(bytes)
-                var copiedBytes = bytesRead
+                var copiedBytes = bytesRead.toLong()
+                var lastProgress = 0
                 while (bytesRead != -1) {
                     destination.write(bytes, 0, bytesRead)
-                    copyListener?.onCopy((copiedBytes / file.length().toFloat() * 100).toInt())
-                    bytesRead = fis.read(bytes)
                     copiedBytes += bytesRead
+                    listenProgress(copiedBytes, file.length()) {
+                        lastProgress = it
+                        copyListener?.onCopy(it)
+                    }
+                    bytesRead = fis.read(bytes)
+                }
+                if (lastProgress != 100) {
+                    copyListener?.onCopy(100)
                 }
             } catch (e: Exception) {
                 Log.d("hello", "Err: $e")
@@ -62,6 +76,14 @@ class FileIO(private val context: Context) {
                 destination.close()
                 fis?.close()
             }
+        }
+    }
+
+    private var lastCalled = 0L
+    private fun listenProgress(current: Long, total: Long, callback: (progress: Int) -> Unit) {
+        if (System.currentTimeMillis() > lastCalled + 1000) {
+            callback((current / total.toFloat() * 100).toInt())
+            lastCalled = System.currentTimeMillis()
         }
     }
 }

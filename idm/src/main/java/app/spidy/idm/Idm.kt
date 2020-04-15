@@ -1,6 +1,7 @@
 package app.spidy.idm
 
 import android.content.Context
+import android.net.Uri
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -39,6 +40,7 @@ class Idm(private val context: Context, private val detectListener: DetectListen
             Detect.TYPE_FACEBOOK -> downloadFacebookVideo(detect)
             Detect.TYPE_AUDIO -> downloadAudio(detect)
             Detect.TYPE_STREAM -> downloadM3u8(detect)
+            Detect.TYPE_FILE -> downloadFile(detect)
         }
     }
 
@@ -52,6 +54,41 @@ class Idm(private val context: Context, private val detectListener: DetectListen
             Detect.TYPE_FACEBOOK -> downloadFacebookVideo(null, snapshot)
             Detect.TYPE_AUDIO -> downloadAudio(null, snapshot)
             Detect.TYPE_STREAM -> downloadM3u8(null, snapshot)
+            Detect.TYPE_FILE -> downloadFile(null, snapshot)
+        }
+    }
+
+    private fun downloadFile(detect: Detect?, snp: Snapshot? = null) {
+        if (snp == null) {
+            val requestHeaders = detect!!.requestHeaders
+            val uId = UUID.randomUUID().toString()
+            idmListener?.onInit("Fetching headers")
+            val heads = HashMap(requestHeaders)
+            heads["range"] = "bytes=0-"
+            hiper.head(detect.data["url"]!!, headers = heads, cookies = detect.cookies).then { headResponse ->
+                val snapshot = Snapshot(
+                    uId = uId,
+                    fileName = detect.data["filename"].toString(),
+                    downloadedSize = 0,
+                    contentSize = headResponse.headers.get("content-length")?.toLong() ?: 0,
+                    requestHeaders = requestHeaders,
+                    responseHeaders = headResponse.headers.toHashMap(),
+                    cookies = detect.cookies,
+                    isResumable = headResponse.statusCode == 206,
+                    type = Detect.TYPE_FILE,
+                    data = detect.data,
+                    speed = "0Kb/s",
+                    remainingTime = "0sec",
+                    state = Snapshot.STATE_PROGRESS
+                )
+                Handler(Looper.getMainLooper()).post {
+                    download(snapshot)
+                }
+            }.catch {e ->
+                idmListener?.onError(e, uId)
+            }
+        } else {
+            download(snp)
         }
     }
 
@@ -292,7 +329,6 @@ class Idm(private val context: Context, private val detectListener: DetectListen
                 }
             }
         }.catch {
-            // TODO: handle the exception
             snapshot.state = Snapshot.STATE_DONE
             Thread.sleep(1000)
             idmListener?.onError(it, snapshot.uId)

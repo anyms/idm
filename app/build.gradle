@@ -6,7 +6,7 @@ apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion 29
-    buildToolsVersion "29.0.2"
+    buildToolsVersion "29.0.3"
     defaultConfig {
         applicationId "app.spidy.idmexample"
         minSdkVersion 21
@@ -36,6 +36,6 @@ dependencies {
     implementation "com.google.android.material:material:1.1.0"
 
     implementation project(":idm")
-    implementation 'com.github.anyms:kookaburra:0.0.4'
+    implementation 'com.github.anyms:kookaburra:0.0.5'
     implementation 'com.github.anyms:hiper:1.0.2'
 }
