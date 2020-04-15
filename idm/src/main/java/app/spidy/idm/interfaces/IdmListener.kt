@@ -1,12 +1,16 @@
 package app.spidy.idm.interfaces
 
 import app.spidy.idm.data.Snapshot
+import java.lang.Exception
 
 interface IdmListener {
-    fun onDone()
-    fun onFinish(snapshot: Snapshot)
     fun onStart(snapshot: Snapshot)
-    fun onProgress(snapshot: Snapshot, progress: Int)
-    fun onInterrupt(snapshot: Snapshot, e: Exception?)
+    fun onProgress(snapshot: Snapshot)
+    fun onComplete(snapshot: Snapshot)
     fun onFail(snapshot: Snapshot)
+    fun onPause(snapshot: Snapshot)
+    fun onResume(snapshot: Snapshot)
+    fun onError(e: Exception, uId: String)
+    fun onCopy(progress: Int)
+    fun onInit(message: String)
 }

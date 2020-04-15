@@ -5,7 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 
-class App: Application() {
+open class IdmApp: Application() {
 
     companion object {
         const val CHANNEL_ID = "SERVICE_NOTIFICATION_CHANNEL_ID"

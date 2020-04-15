@@ -1,33 +1,22 @@
 package app.spidy.idm.data
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "snapshot")
 data class Snapshot(
-    @PrimaryKey
-    val uId: String,
-    val url: String,
-    var status: String = STATUS_NEW,
-    var fileName: String = "download",
-    var isResumable: Boolean = false,
-    var downloadedSize: Long = 0,
-    var totalSize: Long = 0,
-    var mimeType: String = "text/plain",
-    var destUri: String = "Download/Fetcher",
-    var isStream: Boolean = false,
-    var streamUrls: List<String> = arrayListOf(),
-    var progress: Int = 0,
-    var downloadSpeed: String = "0Kb/s",
-    var remainingTime: String = "0sec",
-    var userAgent: String = "Fetcher/1.0"
+    var uId: String,
+    val fileName: String,
+    var downloadedSize: Long,
+    var contentSize: Long,
+    val requestHeaders: HashMap<String, Any>,
+    val responseHeaders: HashMap<String, String>,
+    val cookies: HashMap<String, String>,
+    var isResumable: Boolean,
+    val type: String,
+    val data: HashMap<String, String>,
+    var speed: String,
+    var remainingTime: String,
+    var state: String
 ) {
     companion object {
-        const val STATUS_QUEUED = "queued"
-        const val STATUS_COMPLETED = "completed"
-        const val STATUS_PAUSED = "paused"
-        const val STATUS_FAILED = "failed"
-        const val STATUS_DOWNLOADING = "downloading"
-        const val STATUS_NEW = "new"
+        const val STATE_PROGRESS = "app.spidy.idm.data.STATE_PROGRESS"
+        const val STATE_DONE = "app.spidy.idm.data.STATE_DONE"
     }
 }
