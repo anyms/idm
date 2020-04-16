@@ -8,11 +8,14 @@ import app.spidy.hiper.data.HiperResponse
 import app.spidy.idm.data.Detect
 import app.spidy.idm.interfaces.DetectListener
 import app.spidy.idm.utils.StringUtil
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class GoogleVideoDetector(private val detectListener: DetectListener) {
-    private val videoIds = ArrayList<String>()
-    private val audioIds = ArrayList<String>()
-    private val detects = ArrayList<Detect>()
+    private val videoIds = Collections.synchronizedList(ArrayList<String>())
+    private val audioIds = Collections.synchronizedList(ArrayList<String>())
+    private val detects = Collections.synchronizedList(ArrayList<Detect>())
 
     fun run(url: String, title: String, response: HiperResponse, headers: HashMap<String, Any>, cookies: HashMap<String, String>, isAudio: Boolean = false) {
         val uri = Uri.parse(url)

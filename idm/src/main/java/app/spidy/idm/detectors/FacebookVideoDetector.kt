@@ -4,10 +4,13 @@ import android.webkit.MimeTypeMap
 import app.spidy.idm.data.Detect
 import app.spidy.idm.interfaces.DetectListener
 import app.spidy.idm.utils.StringUtil
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class FacebookVideoDetector(private val detectListener: DetectListener) {
-    private val videoIds = ArrayList<String>()
-    private val detectedUrls = ArrayList<String>()
+    private val videoIds = Collections.synchronizedList(ArrayList<String>())
+    private val detectedUrls = Collections.synchronizedList(ArrayList<String>())
 
     fun run(url: String, title: String, videoId: String, headers: HashMap<String, Any>, cookies: HashMap<String, String>) {
         if (!videoIds.contains(videoId)) {

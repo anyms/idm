@@ -7,9 +7,12 @@ import app.spidy.hiper.data.HiperResponse
 import app.spidy.idm.data.Detect
 import app.spidy.idm.interfaces.DetectListener
 import app.spidy.idm.utils.StringUtil
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class AudioDetector(private val detectListener: DetectListener) {
-    private val detectedUrls = ArrayList<String>()
+    private val detectedUrls = Collections.synchronizedList(ArrayList<String>())
 
     fun run(url: String, title: String, response: HiperResponse, headers: HashMap<String, Any>, cookies: HashMap<String, String>) {
         if (!detectedUrls.contains(url)) {

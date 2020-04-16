@@ -4,9 +4,12 @@ import app.spidy.hiper.Hiper
 import app.spidy.idm.data.Detect
 import app.spidy.idm.interfaces.DetectListener
 import app.spidy.idm.utils.StringUtil
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class M3u8Detector(private val detectListener: DetectListener) {
-    private val detectedUrls = ArrayList<String>()
+    private val detectedUrls = Collections.synchronizedList(ArrayList<String>())
     private val hiper = Hiper.getAsyncInstance()
 
     fun run(url: String, title: String, headers: HashMap<String, Any>, cookies: HashMap<String, String>) {
