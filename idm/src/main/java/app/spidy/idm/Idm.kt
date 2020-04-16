@@ -24,8 +24,8 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-class Idm(private val context: Context, private val detectListener: DetectListener) {
-    val detector = Detector(detectListener)
+class Idm(private val context: Context) {
+//    val detector = Detector(detectListener)
     var idmListener: IdmListener? = null
     var maxSpeed = 4096
 

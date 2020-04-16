@@ -7,8 +7,10 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.fragment.app.FragmentActivity
 import app.spidy.hiper.Hiper
+import app.spidy.idm.Detector
 import app.spidy.idm.Idm
 import app.spidy.idm.data.Detect
+import app.spidy.idm.interfaces.DetectListener
 import app.spidy.kookaburra.controllers.Browser
 
 class BrowserListener(private val idm: Idm): Browser.Listener {
@@ -18,9 +20,17 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
     private var pageUrl: String? = null
     private val urlValidator = UrlValidator()
 
+    private val detectListener = object : DetectListener {
+        override fun onDetect(detects: ArrayList<Detect>) {
+            Log.d("hello", "DETECTED: ${detects[0]}")
+            idm.queue(detects[0])
+        }
+    }
+    private val detector = Detector(detectListener)
+
     override fun shouldInterceptRequest(view: WebView, activity: FragmentActivity?, url: String, request: WebResourceRequest?) {
         if (urlValidator.validate(url)) {
-            idm.detector.detect(url, request?.requestHeaders, cookies, pageUrl, view, activity)
+            detector.detect(url, request?.requestHeaders, cookies, pageUrl, view, activity)
         }
     }
 

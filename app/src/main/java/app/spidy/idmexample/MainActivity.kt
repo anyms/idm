@@ -68,12 +68,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         PermissionHandler.requestStorage(this, "need storage permission") {
-            idm = Idm(this, object : DetectListener {
-                override fun onDetect(detects: ArrayList<Detect>) {
-                    Log.d("hello", "DETECTED: ${detects[0]}")
-                    idm.queue(detects[0])
-                }
-            })
+            idm = Idm(this)
             idm.idmListener = idmListener
 
             browserFragment = BrowserFragment()
