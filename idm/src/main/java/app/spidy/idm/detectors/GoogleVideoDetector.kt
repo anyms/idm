@@ -32,7 +32,7 @@ class GoogleVideoDetector(private val detectListener: DetectListener) {
                     isResumable = response.statusCode == 206
                 )
             )
-            detectListener.onDetect(detects)
+            detectListener.onDetect(detects.last())
         } else if (id != null && isAudio) {
             if (videoIds.contains(id) && !audioIds.contains(id)) {
                 audioIds.add(id)
@@ -40,7 +40,7 @@ class GoogleVideoDetector(private val detectListener: DetectListener) {
                 for (i in detects.indices) {
                     if (detects[i].data["id"] == id) {
                         detects[i].data["audio"] = audioUrl
-                        detectListener.onDetect(detects)
+                        detectListener.onDetect(detects[i])
                         break
                     }
                 }
@@ -74,5 +74,11 @@ class GoogleVideoDetector(private val detectListener: DetectListener) {
             return "${StringUtil.slugify(title)}_$name.$ext"
         }
         return "${StringUtil.slugify(title)}_$name"
+    }
+
+    fun clear() {
+        videoIds.clear()
+        audioIds.clear()
+        detects.clear()
     }
 }

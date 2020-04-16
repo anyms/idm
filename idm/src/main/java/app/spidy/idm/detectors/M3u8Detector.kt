@@ -1,6 +1,5 @@
 package app.spidy.idm.detectors
 
-import android.util.Log
 import app.spidy.hiper.Hiper
 import app.spidy.idm.data.Detect
 import app.spidy.idm.interfaces.DetectListener
@@ -9,7 +8,6 @@ import app.spidy.idm.utils.StringUtil
 class M3u8Detector(private val detectListener: DetectListener) {
     private val detectedUrls = ArrayList<String>()
     private val hiper = Hiper.getAsyncInstance()
-    private val detects = ArrayList<Detect>()
 
     fun run(url: String, title: String, headers: HashMap<String, Any>, cookies: HashMap<String, String>) {
         if (!detectedUrls.contains(url)) {
@@ -17,7 +15,7 @@ class M3u8Detector(private val detectListener: DetectListener) {
             hiper.get(url, headers = headers, cookies = cookies).then { response ->
                 if (response.text != null && validateResponse(response.text!!)) {
                     detectedUrls.add(url)
-                    detects.add(Detect(
+                    detectListener.onDetect(Detect(
                         data = hashMapOf("url" to url, "title" to title, "filename" to getFileName(title, url)),
                         cookies = cookies,
                         requestHeaders = headers,
@@ -25,7 +23,6 @@ class M3u8Detector(private val detectListener: DetectListener) {
                         type = Detect.TYPE_STREAM,
                         isResumable = false
                     ))
-                    detectListener.onDetect(detects)
                 }
             }.catch()
         }
@@ -58,5 +55,9 @@ class M3u8Detector(private val detectListener: DetectListener) {
         }
 
         return isValid
+    }
+
+    fun clear() {
+        detectedUrls.clear()
     }
 }

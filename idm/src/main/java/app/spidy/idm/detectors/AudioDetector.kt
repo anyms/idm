@@ -10,13 +10,11 @@ import app.spidy.idm.utils.StringUtil
 
 class AudioDetector(private val detectListener: DetectListener) {
     private val detectedUrls = ArrayList<String>()
-    private val detects = ArrayList<Detect>()
-    private val hiper = Hiper.getAsyncInstance()
 
     fun run(url: String, title: String, response: HiperResponse, headers: HashMap<String, Any>, cookies: HashMap<String, String>) {
         if (!detectedUrls.contains(url)) {
             detectedUrls.add(url)
-            detects.add(Detect(
+            detectListener.onDetect(Detect(
                 data = hashMapOf("url" to url, "title" to title, "filename" to
                         getFileName(title, url, response.headers.get("content-type"))),
                 cookies = cookies,
@@ -25,7 +23,6 @@ class AudioDetector(private val detectListener: DetectListener) {
                 type = Detect.TYPE_AUDIO,
                 isResumable = response.statusCode == 206
             ))
-            detectListener.onDetect(detects)
         }
     }
 
@@ -41,5 +38,9 @@ class AudioDetector(private val detectListener: DetectListener) {
             return "${StringUtil.slugify(title)}_$name.$ext"
         }
         return "${StringUtil.slugify(title)}_$name"
+    }
+
+    fun clear() {
+        detectedUrls.clear()
     }
 }

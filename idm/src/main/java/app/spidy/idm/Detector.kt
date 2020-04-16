@@ -18,14 +18,20 @@ import kotlin.concurrent.thread
 
 class Detector(private val detectListener: DetectListener) {
     private val hiper = Hiper.getAsyncInstance()
-    private val detects = ArrayList<Detect>()
-    private var previousDetector: String? = null
 
     private val googleVideoDetector = GoogleVideoDetector(detectListener)
     private val facebookVideoDetector = FacebookVideoDetector(detectListener)
     private val videoDetector = VideoDetector(detectListener)
     private val audioDetector = AudioDetector(detectListener)
     private val m3u8Detector = M3u8Detector(detectListener)
+
+    fun reset() {
+        googleVideoDetector.clear()
+        facebookVideoDetector.clear()
+        videoDetector.clear()
+        audioDetector.clear()
+        m3u8Detector.clear()
+    }
 
     fun detect(url: String, requestHeaders: Map<String, String>?,
                cookies: Map<String, String>, pageUrl: String?, view: WebView, activity: FragmentActivity?) {

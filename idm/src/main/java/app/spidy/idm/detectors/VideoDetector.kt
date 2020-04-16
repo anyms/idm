@@ -9,12 +9,11 @@ import app.spidy.idm.utils.StringUtil
 
 class VideoDetector(private val detectListener: DetectListener) {
     private val detectedUrls = ArrayList<String>()
-    private val detects = ArrayList<Detect>()
 
     fun run(url: String, title: String, response: HiperResponse, headers: HashMap<String, Any>, cookies: HashMap<String, String>) {
         if (!detectedUrls.contains(url)) {
             detectedUrls.add(url)
-            detects.add(Detect(
+            detectListener.onDetect(Detect(
                 data = hashMapOf("url" to url, "title" to title, "filename" to
                         getFileName(title, url, response.headers.get("content-type"))),
                 cookies = cookies,
@@ -23,7 +22,6 @@ class VideoDetector(private val detectListener: DetectListener) {
                 type = Detect.TYPE_VIDEO,
                 isResumable = response.statusCode == 206
             ))
-            detectListener.onDetect(detects)
         }
     }
 
@@ -39,5 +37,9 @@ class VideoDetector(private val detectListener: DetectListener) {
             return "${StringUtil.slugify(title)}_$name.$ext"
         }
         return "${StringUtil.slugify(title)}_$name"
+    }
+
+    fun clear() {
+        detectedUrls.clear()
     }
 }

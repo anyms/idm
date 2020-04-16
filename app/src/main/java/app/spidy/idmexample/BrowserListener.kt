@@ -14,7 +14,6 @@ import app.spidy.idm.interfaces.DetectListener
 import app.spidy.kookaburra.controllers.Browser
 
 class BrowserListener(private val idm: Idm): Browser.Listener {
-    private var hiper = Hiper.getAsyncInstance()
     private val cookieManager = CookieManager.getInstance()
     private var cookies = HashMap<String, String>()
     private var pageUrl: String? = null
