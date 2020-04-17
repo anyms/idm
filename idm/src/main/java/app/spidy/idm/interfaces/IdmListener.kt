@@ -14,5 +14,5 @@ interface IdmListener {
     fun onCopy(progress: Int)
     fun onCopied(snapshot: Snapshot)
     fun onCopyError(e: Exception, snapshot: Snapshot)
-    fun onInit(message: String)
+    fun onInit(uId: String, message: String)
 }

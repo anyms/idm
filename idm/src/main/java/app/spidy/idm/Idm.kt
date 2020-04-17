@@ -62,7 +62,7 @@ class Idm(private val context: Context) {
         if (snp == null) {
             val requestHeaders = detect!!.requestHeaders
             val uId = UUID.randomUUID().toString()
-            idmListener?.onInit("Fetching headers")
+            idmListener?.onInit(uId, "Fetching headers")
             val heads = HashMap(requestHeaders)
             heads["range"] = "bytes=0-"
             hiper.head(detect.data["url"]!!, headers = heads, cookies = detect.cookies).then { headResponse ->
@@ -136,8 +136,8 @@ class Idm(private val context: Context) {
 
     private fun downloadFacebookVideo(detect: Detect?, snp: Snapshot? = null) {
         if (snp == null) {
-            idmListener?.onInit("Extracting facebook information")
             val uId = UUID.randomUUID().toString()
+            idmListener?.onInit(uId, "Extracting facebook information")
             val videoId = detect!!.data["id"]
             val requestHeaders = HashMap(detect.requestHeaders)
             val cookies = detect.cookies
@@ -152,7 +152,7 @@ class Idm(private val context: Context) {
                 val hdSrc = regex.find(initResponse.text.toString())?.groups?.get(1)?.value
 
                 if (hdSrc != null) {
-                    idmListener?.onInit("Fetching headers")
+                    idmListener?.onInit(uId, "Fetching headers")
                     Handler(Looper.getMainLooper()).post {
                         requestHeaders["range"] = "bytes=0-"
                         hiper.head(hdSrc, headers = requestHeaders, cookies = detect.cookies)
@@ -206,13 +206,13 @@ class Idm(private val context: Context) {
             remainingTime = "0sec",
             state = Snapshot.STATE_PROGRESS
         )
-        idmListener?.onInit("Fetching m3u8 configs")
+        idmListener?.onInit(snapshot.uId, "Fetching m3u8 configs")
         hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
             val urls = parseStream(snapshot.data["url"]!!, initResponse.text!!)
             var currentTime = 0L
             for (i in urls.indices) {
                 if (currentTime + 1000 < System.currentTimeMillis()) {
-                    idmListener?.onInit("(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
+                    idmListener?.onInit(snapshot.uId, "(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
                     currentTime = System.currentTimeMillis()
                 }
                 val res = hiperSync.head(urls[i], headers = snapshot.requestHeaders, cookies = snapshot.cookies)
