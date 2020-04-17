@@ -34,7 +34,7 @@ class Idm(private val context: Context) {
     private val hiperSync = Hiper.getSyncInstance()
     private val queues = HashMap<String, Caller>()
 
-    fun queue(detect: Detect) {
+    fun download(detect: Detect) {
         when (detect.type) {
             Detect.TYPE_VIDEO -> downloadVideo(detect)
             Detect.TYPE_FACEBOOK -> downloadFacebookVideo(detect)
@@ -294,11 +294,7 @@ class Idm(private val context: Context) {
         }
 
         snapshot.state = Snapshot.STATE_PROGRESS
-        if (snapshot.downloadedSize > 0) {
-            idmListener?.onResume(snapshot)
-        } else {
-            idmListener?.onStart(snapshot)
-        }
+        idmListener?.onStart(snapshot)
         calcSpeed(0, snapshot)
         val caller = hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders,
             cookies = snapshot.cookies, isStream = true).then { response ->
