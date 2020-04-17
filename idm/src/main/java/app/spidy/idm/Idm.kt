@@ -209,8 +209,12 @@ class Idm(private val context: Context) {
         idmListener?.onInit("Fetching m3u8 configs")
         hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
             val urls = parseStream(snapshot.data["url"]!!, initResponse.text!!)
+            var currentTime = 0L
             for (i in urls.indices) {
-                idmListener?.onInit("(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
+                if (currentTime + 1000 < System.currentTimeMillis()) {
+                    idmListener?.onInit("(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
+                    currentTime = System.currentTimeMillis()
+                }
                 val res = hiperSync.head(urls[i], headers = snapshot.requestHeaders, cookies = snapshot.cookies)
                 snapshot.contentSize += res.headers.get("content-length")!!.toLong()
             }

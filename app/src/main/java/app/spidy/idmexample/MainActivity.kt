@@ -20,6 +20,13 @@ class MainActivity : AppCompatActivity() {
 
     var tmp = false
     private val idmListener = object : IdmListener {
+        override fun onCopied(snapshot: Snapshot) {
+
+        }
+
+        override fun onCopyError(e: Exception, snapshot: Snapshot) {
+
+        }
         override fun onInit(message: String) {
             Log.d("hello", "Init: $message")
         }
