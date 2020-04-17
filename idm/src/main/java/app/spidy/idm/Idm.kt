@@ -220,6 +220,7 @@ class Idm(private val context: Context) {
             }
             Handler(Looper.getMainLooper()).post {
                 calcSpeed(snapshot.downloadedSize, snapshot)
+                idmListener?.onStart(snapshot)
                 downloadChunks(snapshot, urls)
             }
         }.catch { e ->
