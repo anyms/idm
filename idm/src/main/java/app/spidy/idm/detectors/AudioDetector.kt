@@ -7,6 +7,7 @@ import app.spidy.hiper.data.HiperResponse
 import app.spidy.idm.data.Detect
 import app.spidy.idm.interfaces.DetectListener
 import app.spidy.idm.utils.StringUtil
+import app.spidy.idm.utils.StringUtil.randomUUID
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -38,9 +39,9 @@ class AudioDetector(private val detectListener: DetectListener) {
         val singleton = MimeTypeMap.getSingleton()
         val ext = singleton.getExtensionFromMimeType(mimetype)
         if (ext != null) {
-            return "${StringUtil.slugify(title)}_$name.$ext"
+            return "${StringUtil.slugify(title)}_${name}_${randomUUID()}.$ext"
         }
-        return "${StringUtil.slugify(title)}_$name"
+        return "${StringUtil.slugify(title)}_${name}_${randomUUID()}"
     }
 
     fun clear() {

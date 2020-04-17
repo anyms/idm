@@ -74,9 +74,9 @@ class GoogleVideoDetector(private val detectListener: DetectListener) {
         val singleton = MimeTypeMap.getSingleton()
         val ext = singleton.getExtensionFromMimeType(mimetype)
         if (ext != null) {
-            return "${StringUtil.slugify(title)}_$name.$ext"
+            return "${StringUtil.slugify(title)}_${name}_${StringUtil.randomUUID()}.$ext"
         }
-        return "${StringUtil.slugify(title)}_$name"
+        return "${StringUtil.slugify(title)}_${name}_${StringUtil.randomUUID()}"
     }
 
     fun clear() {

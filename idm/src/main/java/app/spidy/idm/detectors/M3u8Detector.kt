@@ -37,7 +37,7 @@ class M3u8Detector(private val detectListener: DetectListener) {
 
     private fun getFileName(title: String, url: String): String {
         val name = url.split("?")[0].split("#")[0].split("/").last().split(".")[0]
-        return "${StringUtil.slugify(title)}_$name.mpg"
+        return "${StringUtil.slugify(title)}_${name}_${StringUtil.randomUUID()}.mpg"
     }
 
     private fun validateResponse(text: String): Boolean {
