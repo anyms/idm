@@ -46,6 +46,7 @@ class FileIO(private val context: Context) {
             }
             dataInputStream.close()
             output.close()
+            copyListener?.onCopied()
         } else {
             val dir = Environment.getExternalStoragePublicDirectory(sdCardLocation).absolutePath
             val destination = RandomAccessFile("$dir${File.separator}${file.name}", "rw")
@@ -70,8 +71,9 @@ class FileIO(private val context: Context) {
                 if (lastProgress != 100) {
                     copyListener?.onCopy(100)
                 }
+                copyListener?.onCopied()
             } catch (e: Exception) {
-                Log.d("hello", "Err: $e")
+                copyListener?.onCopyError(e)
             } finally {
                 destination.close()
                 fis?.close()

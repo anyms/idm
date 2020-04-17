@@ -18,9 +18,9 @@ import app.spidy.idm.utils.Formatter.secsToTime
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
-import java.lang.Exception
 import java.net.URI
 import java.util.*
+import kotlin.Exception
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -210,11 +210,12 @@ class Idm(private val context: Context) {
         hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
             val urls = parseStream(snapshot.data["url"]!!, initResponse.text!!)
             for (i in urls.indices) {
-                idmListener?.onInit("(${i+1}/${urls.size}) fetching headers")
+                idmListener?.onInit("(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
                 val res = hiperSync.head(urls[i], headers = snapshot.requestHeaders, cookies = snapshot.cookies)
                 snapshot.contentSize += res.headers.get("content-length")!!.toLong()
             }
             Handler(Looper.getMainLooper()).post {
+                calcSpeed(snapshot.downloadedSize, snapshot)
                 downloadChunks(snapshot, urls)
             }
         }.catch { e ->
@@ -223,7 +224,6 @@ class Idm(private val context: Context) {
     }
 
     private fun downloadChunks(snapshot: Snapshot, urls: List<String>, index: Int = 0) {
-        calcSpeed(snapshot.downloadedSize, snapshot)
         val caller = hiper.get(urls[index], headers = snapshot.requestHeaders,
             cookies = snapshot.cookies, isStream = true).then { response ->
             val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)!!.absolutePath
@@ -239,8 +239,6 @@ class Idm(private val context: Context) {
                     snapshot.downloadedSize += bufferSize
                     bufferSize = response.stream!!.read(bytes)
                 }
-                snapshot.state = Snapshot.STATE_DONE
-                Thread.sleep(1000)
             } catch (e: Exception) {
                 snapshot.state = Snapshot.STATE_DONE
                 Thread.sleep(1000)
@@ -259,11 +257,21 @@ class Idm(private val context: Context) {
             if (index < urls.size - 1) {
                 downloadChunks(snapshot, urls, index+1)
             } else {
+                snapshot.state = Snapshot.STATE_DONE
+                Thread.sleep(1000)
                 idmListener?.onComplete(snapshot)
                 fileIO.copyToSdCard(File(path), Environment.DIRECTORY_DOWNLOADS,
                     snapshot.responseHeaders["content-type"] ?: "", object : CopyListener {
                         override fun onCopy(progress: Int) {
                             idmListener?.onCopy(progress)
+                        }
+
+                        override fun onCopied() {
+                            idmListener?.onCopied(snapshot)
+                        }
+
+                        override fun onCopyError(e: Exception) {
+                            idmListener?.onCopyError(e, snapshot)
                         }
                     })
             }
@@ -325,6 +333,14 @@ class Idm(private val context: Context) {
                             override fun onCopy(progress: Int) {
                                 idmListener?.onCopy(progress)
                             }
+
+                            override fun onCopied() {
+                                idmListener?.onCopied(snapshot)
+                            }
+
+                            override fun onCopyError(e: Exception) {
+                                idmListener?.onCopyError(e, snapshot)
+                            }
                         })
                 }
             }
@@ -346,10 +362,11 @@ class Idm(private val context: Context) {
                     snapshot.remainingTime = secsToTime((snapshot.contentSize - snapshot.downloadedSize) / downloadPerSec)
                 }
             }
+            idmListener?.onProgress(snapshot)
+            Log.d("hello", "State: ${snapshot.state}")
             if (snapshot.state == Snapshot.STATE_PROGRESS) {
                 calcSpeed(snapshot.downloadedSize, snapshot)
             }
-            idmListener?.onProgress(snapshot)
         }, 1000)
     }
 

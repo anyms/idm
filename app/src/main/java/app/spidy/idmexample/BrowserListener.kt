@@ -19,10 +19,14 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
     private var pageUrl: String? = null
     private val urlValidator = UrlValidator()
 
+    var tmp = false
     private val detectListener = object : DetectListener {
-        override fun onDetect(detects: ArrayList<Detect>) {
-            Log.d("hello", "DETECTED: ${detects[0]}")
-            idm.queue(detects[0])
+        override fun onDetect(detect: Detect) {
+            if (!tmp) {
+                Log.d("hello", "DETECTED: ${detect}")
+                idm.queue(detect)
+                tmp = true
+            }
         }
     }
     private val detector = Detector(detectListener)

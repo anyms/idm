@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         }
         override fun onProgress(snapshot: Snapshot) {
             val progress = (snapshot.downloadedSize / snapshot.contentSize.toFloat() * 100).toInt()
-            Log.d("hello", "${snapshot.uId}: ${snapshot.downloadedSize}/${snapshot.contentSize}")
+            Log.d("hello", "${snapshot.speed}: ${snapshot.downloadedSize}/${snapshot.contentSize}")
 
 //            if (progress > 20 && !tmp) {
 //                Log.d("hello", "Pausing......")
