@@ -207,13 +207,16 @@ class Idm(private val context: Context) {
             state = Snapshot.STATE_PROGRESS
         )
         idmListener?.onInit(snapshot.uId, "Fetching m3u8 configs")
-        hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
+        val caller = hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
             val urls = parseStream(snapshot.data["url"]!!, initResponse.text!!)
             var currentTime = 0L
             for (i in urls.indices) {
                 if (currentTime + 1000 < System.currentTimeMillis()) {
                     idmListener?.onInit(snapshot.uId, "(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
                     currentTime = System.currentTimeMillis()
+                }
+                if (!queues.containsKey(snapshot.uId)) {
+                    break
                 }
                 val res = hiperSync.head(urls[i], headers = snapshot.requestHeaders, cookies = snapshot.cookies)
                 snapshot.contentSize += res.headers.get("content-length")!!.toLong()
@@ -224,8 +227,11 @@ class Idm(private val context: Context) {
                 downloadChunks(snapshot, urls)
             }
         }.catch { e ->
+            snapshot.state = Snapshot.STATE_DONE
+            Thread.sleep(1000)
             idmListener?.onError(e, snapshot.uId)
         }
+        queues[snapshot.uId] = caller
     }
 
     private fun downloadChunks(snapshot: Snapshot, urls: List<String>, index: Int = 0) {
@@ -281,6 +287,8 @@ class Idm(private val context: Context) {
                     })
             }
         }.catch { e ->
+            snapshot.state = Snapshot.STATE_DONE
+            Thread.sleep(1000)
             val message = e.message.toString().toLowerCase(Locale.ROOT)
             if (message.contains("cancel") || message.contains("closed")) {
                 idmListener?.onPause(snapshot)
