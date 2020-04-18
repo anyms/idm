@@ -229,7 +229,6 @@ class Idm(private val context: Context) {
             }
         }.catch { e ->
             snapshot.state = Snapshot.STATE_DONE
-            Thread.sleep(1000)
             idmListener?.onError(e, snapshot.uId)
         }
         queues[snapshot.uId] = caller
@@ -253,7 +252,6 @@ class Idm(private val context: Context) {
                 }
             } catch (e: Exception) {
                 snapshot.state = Snapshot.STATE_DONE
-                Thread.sleep(1000)
                 val message = e.message.toString().toLowerCase(Locale.ROOT)
                 if (message.contains("cancel") || message.contains("closed")) {
                     idmListener?.onPause(snapshot)
@@ -270,7 +268,6 @@ class Idm(private val context: Context) {
                 downloadChunks(snapshot, urls, index+1)
             } else {
                 snapshot.state = Snapshot.STATE_DONE
-                Thread.sleep(1000)
                 idmListener?.onComplete(snapshot)
                 fileIO.copyToSdCard(File(path), Environment.DIRECTORY_DOWNLOADS,
                     snapshot.responseHeaders["content-type"] ?: "", object : CopyListener {
@@ -289,7 +286,6 @@ class Idm(private val context: Context) {
             }
         }.catch { e ->
             snapshot.state = Snapshot.STATE_DONE
-            Thread.sleep(1000)
             val message = e.message.toString().toLowerCase(Locale.ROOT)
             if (message.contains("cancel") || message.contains("closed")) {
                 idmListener?.onPause(snapshot)
@@ -326,11 +322,9 @@ class Idm(private val context: Context) {
                     bufferSize = response.stream!!.read(bytes)
                 }
                 snapshot.state = Snapshot.STATE_DONE
-                Thread.sleep(1000)
                 idmListener?.onComplete(snapshot)
             } catch (e: Exception) {
                 snapshot.state = Snapshot.STATE_DONE
-                Thread.sleep(1000)
                 val message = e.message.toString().toLowerCase(Locale.ROOT)
                 if (message.contains("cancel") || message.contains("closed")) {
                     idmListener?.onPause(snapshot)
@@ -361,7 +355,6 @@ class Idm(private val context: Context) {
             }
         }.catch { e ->
             snapshot.state = Snapshot.STATE_DONE
-            Thread.sleep(1000)
             val message = e.message.toString().toLowerCase(Locale.ROOT)
             if (message.contains("cancel") || message.contains("closed")) {
                 idmListener?.onPause(snapshot)
