@@ -176,8 +176,8 @@ class Idm(private val context: Context) {
                                 )
                                 download(snapshot)
                             }.catch { e ->
-                            idmListener?.onError(e, uId)
-                        }
+                                idmListener?.onError(e, uId)
+                            }
                     }
                 } else {
                     idmListener?.onError(IOException("Unable to extract facebook information"), uId)
@@ -281,7 +281,12 @@ class Idm(private val context: Context) {
                     })
             }
         }.catch { e ->
-            idmListener?.onError(e, snapshot.uId)
+            val message = e.message.toString().toLowerCase(Locale.ROOT)
+            if (message.contains("cancel") || message.contains("closed")) {
+                idmListener?.onPause(snapshot)
+            } else {
+                idmListener?.onError(e, snapshot.uId)
+            }
         }
         queues[snapshot.uId] = caller
     }
@@ -345,10 +350,15 @@ class Idm(private val context: Context) {
                         })
                 }
             }
-        }.catch {
+        }.catch { e ->
             snapshot.state = Snapshot.STATE_DONE
             Thread.sleep(1000)
-            idmListener?.onError(it, snapshot.uId)
+            val message = e.message.toString().toLowerCase(Locale.ROOT)
+            if (message.contains("cancel") || message.contains("closed")) {
+                idmListener?.onPause(snapshot)
+            } else {
+                idmListener?.onError(e, snapshot.uId)
+            }
         }
 
         queues[snapshot.uId] = caller
