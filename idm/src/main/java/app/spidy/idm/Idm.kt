@@ -216,6 +216,7 @@ class Idm(private val context: Context) {
                     currentTime = System.currentTimeMillis()
                 }
                 if (!queues.containsKey(snapshot.uId)) {
+                    snapshot.state = Snapshot.STATE_DONE
                     break
                 }
                 val res = hiperSync.head(urls[i], headers = snapshot.requestHeaders, cookies = snapshot.cookies)
