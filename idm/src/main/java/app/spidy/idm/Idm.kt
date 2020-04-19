@@ -39,6 +39,10 @@ class Idm(private val context: Context) {
             Detect.TYPE_AUDIO -> downloadAudio(detect)
             Detect.TYPE_STREAM -> downloadM3u8(detect)
             Detect.TYPE_FILE -> downloadFile(detect)
+            Detect.TYPE_GOOGLE -> {
+                detect.data["url"] = detect.data["audio"]!!
+                downloadAudio(detect)
+            }
         }
     }
 
@@ -53,6 +57,7 @@ class Idm(private val context: Context) {
             Detect.TYPE_AUDIO -> downloadAudio(null, snapshot)
             Detect.TYPE_STREAM -> downloadM3u8(null, snapshot)
             Detect.TYPE_FILE -> downloadFile(null, snapshot)
+            Detect.TYPE_GOOGLE -> downloadAudio(null, snapshot)
         }
     }
 
