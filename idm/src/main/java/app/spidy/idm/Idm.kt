@@ -205,6 +205,7 @@ class Idm(private val context: Context) {
             state = Snapshot.STATE_PROGRESS
         )
         idmListener?.onInit(snapshot.uId, "Fetching m3u8 configs")
+        val currentSnapContentSize = snapshot.contentSize
         val caller = hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
             val urls = parseStream(snapshot.data["url"]!!, initResponse.text!!)
             var currentTime = 0L
@@ -212,6 +213,7 @@ class Idm(private val context: Context) {
             for (i in urls.indices) {
                 if (currentTime + 1000 < System.currentTimeMillis()) {
                     idmListener?.onInit(snapshot.uId, "(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
+                    Log.d("hello2", "(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
                     currentTime = System.currentTimeMillis()
                 }
                 if (!callers.containsKey(snapshot.uId)) {
@@ -219,9 +221,12 @@ class Idm(private val context: Context) {
                     break
                 }
                 val res = hiperSync.head(urls[i], headers = snapshot.requestHeaders, cookies = snapshot.cookies)
-                snapshot.contentSize += res.headers.get("content-length")!!.toLong()
+                if (currentSnapContentSize == 0L) {
+                    snapshot.contentSize += res.headers.get("content-length")!!.toLong()
+                }
             }
             Handler(Looper.getMainLooper()).post {
+                Log.d("hello2", "${callers.containsKey(snapshot.uId)}")
                 if (callers.containsKey(snapshot.uId)) {
                     calcSpeed(snapshot.downloadedSize, snapshot)
                     idmListener?.onStart(snapshot)

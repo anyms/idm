@@ -33,16 +33,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onCopy(progress: Int) {
-            Log.d("hello", "Copying: $progress")
+
         }
         override fun onError(e: Exception, uId: String) {
-            Log.d("hello", "${uId}: Exception: $e")
+            Log.d("hello2", "Err: $e")
         }
         override fun onStart(snapshot: Snapshot) {
-            Log.d("hello", "${snapshot.uId}: $snapshot")
+            Log.d("hello2", "${snapshot.uId}: $snapshot")
         }
         override fun onComplete(snapshot: Snapshot) {
-            Log.d("hello", "${snapshot.uId}: COMPLETED!!!")
+            Log.d("hello2", "${snapshot.uId}: COMPLETED!!!")
         }
 
         override fun onFail(snapshot: Snapshot) {
@@ -50,24 +50,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPause(snapshot: Snapshot) {
-            Log.d("hello", "${snapshot.uId}: PAUSED!!!")
+            Log.d("hello2", "${snapshot.uId}: PAUSED!!!")
         }
         override fun onProgress(snapshot: Snapshot) {
             val progress = (snapshot.downloadedSize / snapshot.contentSize.toFloat() * 100).toInt()
-            Log.d("hello", "${snapshot.speed}: ${snapshot.downloadedSize}/${snapshot.contentSize}")
+            Log.d("hello2", "$progress%")
 
-//            if (progress > 20 && !tmp) {
-//                Log.d("hello", "Pausing......")
-//                tmp = true
-//                idm.pause(snapshot.uId)
-//
-//                thread {
-//                    Thread.sleep(5000)
-//                    runOnUiThread {
-//                        idm.resume(snapshot)
-//                    }
-//                }
-//            }
+            if (progress > 5 && !tmp) {
+                tmp = true
+                idm.pause(snapshot.uId)
+
+                thread {
+                    Thread.sleep(5000)
+                    runOnUiThread {
+                        idm.resume(snapshot)
+                    }
+                }
+            }
         }
     }
 
