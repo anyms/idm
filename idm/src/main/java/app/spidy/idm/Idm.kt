@@ -210,6 +210,7 @@ class Idm(private val context: Context) {
         val caller = hiper.get(snapshot.data["url"]!!, headers = snapshot.requestHeaders, cookies = snapshot.cookies).then { initResponse ->
             val urls = parseStream(snapshot.data["url"]!!, initResponse.text!!)
             var currentTime = 0L
+
             for (i in urls.indices) {
                 if (currentTime + 1000 < System.currentTimeMillis()) {
                     idmListener?.onInit(snapshot.uId, "(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
@@ -223,9 +224,13 @@ class Idm(private val context: Context) {
                 snapshot.contentSize += res.headers.get("content-length")!!.toLong()
             }
             Handler(Looper.getMainLooper()).post {
-                calcSpeed(snapshot.downloadedSize, snapshot)
-                idmListener?.onStart(snapshot)
-                downloadChunks(snapshot, urls)
+                if (!queues.containsKey(snapshot.uId)) {
+                    calcSpeed(snapshot.downloadedSize, snapshot)
+                    idmListener?.onStart(snapshot)
+                    downloadChunks(snapshot, urls)
+                } else {
+                    idmListener?.onError(IOException("Canceled"), snapshot.uId)
+                }
             }
         }.catch { e ->
             snapshot.state = Snapshot.STATE_DONE
