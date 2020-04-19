@@ -27,9 +27,11 @@ class MainActivity : AppCompatActivity() {
         override fun onCopyError(e: Exception, snapshot: Snapshot) {
 
         }
-        override fun onInit(message: String) {
-            Log.d("hello", "Init: $message")
+
+        override fun onInit(uId: String, message: String) {
+
         }
+
         override fun onCopy(progress: Int) {
             Log.d("hello", "Copying: $progress")
         }
@@ -42,6 +44,11 @@ class MainActivity : AppCompatActivity() {
         override fun onComplete(snapshot: Snapshot) {
             Log.d("hello", "${snapshot.uId}: COMPLETED!!!")
         }
+
+        override fun onFail(snapshot: Snapshot) {
+
+        }
+
         override fun onPause(snapshot: Snapshot) {
             Log.d("hello", "${snapshot.uId}: PAUSED!!!")
         }
@@ -61,12 +68,6 @@ class MainActivity : AppCompatActivity() {
 //                    }
 //                }
 //            }
-        }
-        override fun onResume(snapshot: Snapshot) {
-            Log.d("hello", "${snapshot.uId}: RESUMED!!!")
-        }
-        override fun onFail(snapshot: Snapshot) {
-            Log.d("hello", "${snapshot.uId}: FAILED!!!")
         }
     }
 

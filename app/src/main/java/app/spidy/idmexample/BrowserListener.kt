@@ -24,7 +24,7 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
         override fun onDetect(detect: Detect) {
             if (!tmp) {
                 Log.d("hello", "DETECTED: ${detect}")
-                idm.queue(detect)
+                idm.download(detect)
                 tmp = true
             }
         }
@@ -67,6 +67,6 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
             type = Detect.TYPE_FILE,
             isResumable = false
         )
-        idm.queue(detect)
+        idm.download(detect)
     }
 }

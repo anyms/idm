@@ -1,7 +1,6 @@
 package app.spidy.idm
 
 import android.content.Context
-import android.net.Uri
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -11,7 +10,6 @@ import app.spidy.hiper.controllers.Caller
 import app.spidy.idm.data.Detect
 import app.spidy.idm.data.Snapshot
 import app.spidy.idm.interfaces.CopyListener
-import app.spidy.idm.interfaces.DetectListener
 import app.spidy.idm.interfaces.IdmListener
 import app.spidy.idm.utils.Formatter.formatBytes
 import app.spidy.idm.utils.Formatter.secsToTime
@@ -32,7 +30,7 @@ class Idm(private val context: Context) {
     private val fileIO = FileIO(context)
     private val hiper = Hiper.getAsyncInstance()
     private val hiperSync = Hiper.getSyncInstance()
-    private val queues = HashMap<String, Caller>()
+    private val callers = HashMap<String, Caller>()
 
     fun download(detect: Detect) {
         when (detect.type) {
@@ -45,8 +43,8 @@ class Idm(private val context: Context) {
     }
 
     fun pause(uId: String) {
-        queues[uId]?.cancel()
-        queues.remove(uId)
+        callers[uId]?.cancel()
+        callers.remove(uId)
     }
     fun resume(snapshot: Snapshot) {
         when (snapshot.type) {
@@ -216,7 +214,7 @@ class Idm(private val context: Context) {
                     idmListener?.onInit(snapshot.uId, "(${((i+1) / urls.size.toFloat() * 100).toInt()}%) fetching headers")
                     currentTime = System.currentTimeMillis()
                 }
-                if (!queues.containsKey(snapshot.uId)) {
+                if (!callers.containsKey(snapshot.uId)) {
                     snapshot.state = Snapshot.STATE_DONE
                     break
                 }
@@ -224,7 +222,7 @@ class Idm(private val context: Context) {
                 snapshot.contentSize += res.headers.get("content-length")!!.toLong()
             }
             Handler(Looper.getMainLooper()).post {
-                if (!queues.containsKey(snapshot.uId)) {
+                if (callers.containsKey(snapshot.uId)) {
                     calcSpeed(snapshot.downloadedSize, snapshot)
                     idmListener?.onStart(snapshot)
                     downloadChunks(snapshot, urls)
@@ -237,7 +235,7 @@ class Idm(private val context: Context) {
             Thread.sleep(1000)
             idmListener?.onError(e, snapshot.uId)
         }
-        queues[snapshot.uId] = caller
+        callers[snapshot.uId] = caller
     }
 
     private fun downloadChunks(snapshot: Snapshot, urls: List<String>, index: Int = 0) {
@@ -302,7 +300,7 @@ class Idm(private val context: Context) {
                 idmListener?.onError(e, snapshot.uId)
             }
         }
-        queues[snapshot.uId] = caller
+        callers[snapshot.uId] = caller
     }
 
     private fun download(snapshot: Snapshot) {
@@ -375,7 +373,7 @@ class Idm(private val context: Context) {
             }
         }
 
-        queues[snapshot.uId] = caller
+        callers[snapshot.uId] = caller
     }
 
     private fun calcSpeed(prevDownloaded: Long, snapshot: Snapshot) {
