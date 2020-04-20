@@ -4,7 +4,7 @@ data class Detect(
     val data: HashMap<String, String>,
     val cookies: HashMap<String, String>,
     val requestHeaders: HashMap<String, Any>,
-    val responseHeaders: HashMap<String, String>,
+    var responseHeaders: HashMap<String, String>,
     val type: String,
     val isResumable: Boolean
 ) {

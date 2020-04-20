@@ -41,7 +41,12 @@ class Idm(private val context: Context) {
             Detect.TYPE_FILE -> downloadFile(detect)
             Detect.TYPE_GOOGLE -> {
                 detect.data["url"] = detect.data["audio"]!!
-                downloadAudio(detect)
+                hiper.head(detect.data["url"]!!, headers = detect.requestHeaders, cookies = detect.cookies).then {
+                    detect.responseHeaders = it.headers.toHashMap()
+                    downloadAudio(detect)
+                }.catch {
+                    downloadAudio(detect)
+                }
             }
         }
     }
