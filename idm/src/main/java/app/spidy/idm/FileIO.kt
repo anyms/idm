@@ -25,7 +25,7 @@ class FileIO(private val context: Context) {
             val descriptor =
                 context.contentResolver.openFileDescriptor(uri!!, "w") //"w" specify's write mode
             val fileDescriptor: FileDescriptor = descriptor!!.fileDescriptor
-            val dataInputStream: InputStream = context.openFileInput(file.absolutePath)
+            val dataInputStream: InputStream = FileInputStream(file.absolutePath)
 
             val output = FileOutputStream(fileDescriptor)
             val buf = ByteArray(4096)

@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onCopyError(e: Exception, snapshot: Snapshot) {
-
+            Log.d("hello2", "CopyError: $e")
         }
 
         override fun onInit(uId: String, message: String) {
@@ -55,18 +55,6 @@ class MainActivity : AppCompatActivity() {
         override fun onProgress(snapshot: Snapshot) {
             val progress = (snapshot.downloadedSize / snapshot.contentSize.toFloat() * 100).toInt()
             Log.d("hello2", "$progress%")
-
-            if (progress > 5 && !tmp) {
-                tmp = true
-                idm.pause(snapshot.uId)
-
-                thread {
-                    Thread.sleep(5000)
-                    runOnUiThread {
-                        idm.resume(snapshot)
-                    }
-                }
-            }
         }
     }
 

@@ -23,7 +23,7 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
     private val detectListener = object : DetectListener {
         override fun onDetect(detect: Detect) {
             if (!tmp) {
-                Log.d("hello", "DETECTED: ${detect}")
+                Log.d("hello", "DETECTED: $detect")
                 idm.download(detect)
                 tmp = true
             }
