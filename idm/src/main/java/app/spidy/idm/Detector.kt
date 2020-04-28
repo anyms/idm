@@ -47,7 +47,7 @@ class Detector(private val detectListener: DetectListener) {
         }
 
         if (plainUrl.contains("fbcdn.net") && (plainUrl.contains("video.") || plainUrl.contains("/v/"))) {
-            if (uri.getQueryParameter("bytestart") == "0") {
+            if (uri.getQueryParameter("bytestart") != null) {
                 activity?.runOnUiThread {
                     view.evaluateJavascript("""
                         (function() {

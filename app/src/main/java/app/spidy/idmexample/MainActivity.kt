@@ -62,6 +62,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        Log.d("hello2", "working...")
+
         PermissionHandler.requestStorage(this, "need storage permission") {
             idm = Idm(this)
             idm.idmListener = idmListener

@@ -156,16 +156,19 @@ class Idm(private val context: Context) {
                 headers = requestHeaders,
                 cookies = cookies
             ).then { initResponse ->
-                val regex = "hd_src:\"(.+?)\"".toRegex()
-                val hdSrc = regex.find(initResponse.text.toString())?.groups?.get(1)?.value
+                val hdRegex = "hd_src:\"(.+?)\"".toRegex()
+                val sdRegex = "sd_src:\"(.+?)\"".toRegex()
+                val hdSrc = hdRegex.find(initResponse.text.toString())?.groups?.get(1)?.value
+                val sdSrc = sdRegex.find(initResponse.text.toString())?.groups?.get(1)?.value
+                val src = hdSrc ?: sdSrc
 
-                if (hdSrc != null) {
+                if (src != null) {
                     idmListener?.onInit(uId, "Fetching headers")
                     Handler(Looper.getMainLooper()).post {
                         requestHeaders["range"] = "bytes=0-"
-                        hiper.head(hdSrc, headers = requestHeaders, cookies = detect.cookies)
+                        hiper.head(src, headers = requestHeaders, cookies = detect.cookies)
                             .then { headResponse ->
-                                detect.data["url"] = hdSrc
+                                detect.data["url"] = src
                                 val snapshot = Snapshot(
                                     uId = uId,
                                     fileName = detect.data["filename"].toString(),
