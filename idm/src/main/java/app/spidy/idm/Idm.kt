@@ -89,6 +89,7 @@ class Idm(private val context: Context) {
                     remainingTime = "0sec",
                     state = Snapshot.STATE_PROGRESS
                 )
+                headResponse.close()
                 Handler(Looper.getMainLooper()).post {
                     download(snapshot)
                 }
@@ -185,6 +186,7 @@ class Idm(private val context: Context) {
                                     remainingTime = "0sec",
                                     state = Snapshot.STATE_PROGRESS
                                 )
+                                headResponse.close()
                                 download(snapshot)
                             }.catch { e ->
                                 idmListener?.onError(e, uId)
@@ -193,6 +195,7 @@ class Idm(private val context: Context) {
                 } else {
                     idmListener?.onError(IOException("Unable to extract facebook information"), uId)
                 }
+                initResponse.close()
             }.catch { e ->
                 idmListener?.onError(e, uId)
             }
@@ -237,7 +240,9 @@ class Idm(private val context: Context) {
                 if (currentSnapContentSize == 0L) {
                     snapshot.contentSize += res.headers.get("content-length")!!.toLong()
                 }
+                res.close()
             }
+            initResponse.close()
             Handler(Looper.getMainLooper()).post {
                 Log.d("hello2", "${callers.containsKey(snapshot.uId)}")
                 if (callers.containsKey(snapshot.uId)) {
@@ -286,7 +291,7 @@ class Idm(private val context: Context) {
                 destination.close()
                 response.stream?.close()
             }
-
+            response.close()
             if (index < urls.size - 1) {
                 downloadChunks(snapshot, urls, index+1)
             } else {
@@ -362,7 +367,7 @@ class Idm(private val context: Context) {
                 isException = true
             } finally {
                 destination.close()
-                response.stream?.close()
+                response.close()
                 if (!isException) {
                     fileIO.copyToSdCard(File(path), Environment.DIRECTORY_DOWNLOADS,
                         snapshot.responseHeaders["content-type"] ?: "", object : CopyListener {
