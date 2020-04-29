@@ -122,7 +122,7 @@ class Detector(private val detectListener: DetectListener) {
             val plainUrl = url.split("://")[1].split("?")[0].split("/")[0]
 
             if (contentType.toLowerCase(Locale.ROOT) == "application/x-mpegurl" ||
-                contentType.toLowerCase(Locale.ROOT) == "vnd.apple.mpegurl") {
+                contentType.toLowerCase(Locale.ROOT) == "application/vnd.apple.mpegurl") {
 
                 m3u8Detector.run(url, title, headers, cooks)
 
