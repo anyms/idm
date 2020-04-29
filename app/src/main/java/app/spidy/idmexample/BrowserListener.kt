@@ -37,6 +37,19 @@ class BrowserListener(private val idm: Idm): Browser.Listener {
         }
     }
 
+    override fun onPageFinished(view: WebView, url: String) {
+        if (url.contains("tamilian.net/")) {
+            view.evaluateJavascript("""
+                var parent = document.querySelector("input[name='id']").parentNode;
+                parent.removeAttribute("target");
+                var button = document.createElement("input");
+                button.setAttribute("type", "submit");
+                button.value = "PLAY THE VIDEO";
+                parent.appendChild(button);
+            """.trimIndent()) {}
+        }
+    }
+
     override fun onNewUrl(view: WebView, url: String) {
         pageUrl = url
         cookies = HashMap()

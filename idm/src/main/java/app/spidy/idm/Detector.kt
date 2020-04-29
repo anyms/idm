@@ -117,7 +117,7 @@ class Detector(private val detectListener: DetectListener) {
             contentType.toLowerCase(Locale.ROOT) != "video/mp2t" &&
             (contentType.startsWith("video/") || contentType.startsWith("audio/") ||
                     contentType.toLowerCase(Locale.ROOT) == "application/x-mpegurl" ||
-                    contentType.toLowerCase(Locale.ROOT) == "vnd.apple.mpegurl")
+                    contentType.toLowerCase(Locale.ROOT) == "application/vnd.apple.mpegurl")
         ) {
             val plainUrl = url.split("://")[1].split("?")[0].split("/")[0]
 
