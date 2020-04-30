@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import app.spidy.idm.data.Snapshot
 import app.spidy.idm.interfaces.CopyListener
 import java.io.*
 import java.lang.Exception
@@ -13,7 +14,8 @@ import kotlin.concurrent.thread
 
 
 class FileIO(private val context: Context) {
-    fun copyToSdCard(file: File, sdCardLocation: String, mimeType: String = "*/*", copyListener: CopyListener? = null) {
+    fun copyToSdCard(file: File, sdCardLocation: String, mimeType: String = "*/*", snapshot: Snapshot,
+                     copyListener: CopyListener? = null) {
         thread {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val values = ContentValues()
@@ -39,16 +41,16 @@ class FileIO(private val context: Context) {
                     copiedBytes += bytesRead
                     listenProgress(copiedBytes, file.length()) {
                         lastProgress = it
-                        copyListener?.onCopy(it)
+                        copyListener?.onCopy(snapshot, it)
                     }
                     bytesRead = dataInputStream.read(buf)
                 }
                 if (lastProgress != 100) {
-                    copyListener?.onCopy(100)
+                    copyListener?.onCopy(snapshot, 100)
                 }
                 dataInputStream.close()
                 output.close()
-                copyListener?.onCopied()
+                copyListener?.onCopied(snapshot)
             } else {
                 val dir = Environment.getExternalStoragePublicDirectory(sdCardLocation).absolutePath
                 val destination = RandomAccessFile("$dir${File.separator}${file.name}", "rw")
@@ -66,16 +68,16 @@ class FileIO(private val context: Context) {
                         copiedBytes += bytesRead
                         listenProgress(copiedBytes, file.length()) {
                             lastProgress = it
-                            copyListener?.onCopy(it)
+                            copyListener?.onCopy(snapshot, it)
                         }
                         bytesRead = fis.read(bytes)
                     }
                     if (lastProgress != 100) {
-                        copyListener?.onCopy(100)
+                        copyListener?.onCopy(snapshot, 100)
                     }
-                    copyListener?.onCopied()
+                    copyListener?.onCopied(snapshot)
                 } catch (e: Exception) {
-                    copyListener?.onCopyError(e)
+                    copyListener?.onCopyError(e, snapshot)
                 } finally {
                     destination.close()
                     fis?.close()

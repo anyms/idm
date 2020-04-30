@@ -299,16 +299,16 @@ class Idm(private val context: Context) {
                 Thread.sleep(1000)
                 idmListener?.onComplete(snapshot)
                 fileIO.copyToSdCard(File(path), Environment.DIRECTORY_DOWNLOADS,
-                    snapshot.responseHeaders["content-type"] ?: "", object : CopyListener {
-                        override fun onCopy(progress: Int) {
-                            idmListener?.onCopy(progress)
+                    snapshot.responseHeaders["content-type"] ?: "", snapshot, object : CopyListener {
+                        override fun onCopy(snapshot: Snapshot, progress: Int) {
+                            idmListener?.onCopy(snapshot, progress)
                         }
 
-                        override fun onCopied() {
+                        override fun onCopied(snapshot: Snapshot) {
                             idmListener?.onCopied(snapshot)
                         }
 
-                        override fun onCopyError(e: Exception) {
+                        override fun onCopyError(e: Exception, snapshot: Snapshot) {
                             idmListener?.onCopyError(e, snapshot)
                         }
                     })
@@ -370,16 +370,16 @@ class Idm(private val context: Context) {
                 response.close()
                 if (!isException) {
                     fileIO.copyToSdCard(File(path), Environment.DIRECTORY_DOWNLOADS,
-                        snapshot.responseHeaders["content-type"] ?: "", object : CopyListener {
-                            override fun onCopy(progress: Int) {
-                                idmListener?.onCopy(progress)
+                        snapshot.responseHeaders["content-type"] ?: "", snapshot, object : CopyListener {
+                            override fun onCopy(snapshot: Snapshot, progress: Int) {
+                                idmListener?.onCopy(snapshot, progress)
                             }
 
-                            override fun onCopied() {
+                            override fun onCopied(snapshot: Snapshot) {
                                 idmListener?.onCopied(snapshot)
                             }
 
-                            override fun onCopyError(e: Exception) {
+                            override fun onCopyError(e: Exception, snapshot: Snapshot) {
                                 idmListener?.onCopyError(e, snapshot)
                             }
                         })
